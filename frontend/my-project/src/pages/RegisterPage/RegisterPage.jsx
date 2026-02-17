@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import bgRegister from "/src/assets/image/background/backgroundRegister.jpeg.webp";
 import { registerUser } from "@redux/slices/authSlice";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { mergeCart } from '@redux/slices/cartSlice';
 function RegisterPage() {
   const dispatch = useDispatch();

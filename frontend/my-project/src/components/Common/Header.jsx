@@ -1,6 +1,6 @@
 import TopBar from "@components/Common/TopBar/TopBar";
 import Navbar from "@components/Common/NavBar/NavBar";
-import { SideBarProvider } from "@context/sideBarContext.jsx";
+import { SideBarProvider } from "@context/SideBarContext.jsx";
 function Header() {
   return (
     <SideBarProvider>

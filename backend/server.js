@@ -43,3 +43,8 @@ app.use("/api/admin/orders", orderAdminRoutes)
 app.listen(PORT, () => {
   console.log(`server is running on http://localhost:${PORT}`);
 });
+
+app.use(cors({
+  origin: ["https://doantotnghiep-mu.vercel.app"], 
+  credentials: true
+}));

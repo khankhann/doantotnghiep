@@ -3,11 +3,14 @@ import { IoCloseOutline } from "react-icons/io5";
 import { SideBarContext } from "@context/SideBarContext";
 import CartContent from "@components/Cart/CartContent";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { clearCart } from '@redux/slices/cartSlice';
+import { deleteCart } from "@redux/slices/cartSlice";
 
 function ShopCart({ openShopCart, toggleShopCart }) {
   const { isShopCartOpen, setisShopCartOpen } = useContext(SideBarContext);
   const navigate = useNavigate();
+  const dispatch = useDispatch()
   const { user, guestId } = useSelector((state) => state.auth);
   const { cart } = useSelector((state) => state.cart);
   const userId = user ? user._id : null;
@@ -18,6 +21,11 @@ function ShopCart({ openShopCart, toggleShopCart }) {
       setisShopCartOpen(!isShopCartOpen);
     }
   };
+  const handleClear = ()=>{
+    dispatch(clearCart())
+    dispatch(deleteCart({userId: user._id , guestId}))
+   
+  }
   const handleCheckOut = () => {
     if (!user) {
       navigate("/login?redirect=checkout");
@@ -26,7 +34,7 @@ function ShopCart({ openShopCart, toggleShopCart }) {
     }
     toggleShopCart();
   };
-const isShowPrice = cart.products.reduce((total , product)=>{
+const isShowPrice = cart.products?.reduce((total , product)=>{
   return total + (product.price * product.quantity)
 }, 0)
 
@@ -67,15 +75,26 @@ const isShowPrice = cart.products.reduce((total , product)=>{
               <CartContent cart={cart} userId={userId} guestId={guestId} />{" "}
             </div>
           ) : (
-            <p>Your cart is empty. </p>
+            <p className="text-center">Your cart is empty. </p>
           )}
         </div>
         {/* {button checkout} */}
         <div className="p-4 bg-white sticky bottom-0 ">
           {cart && cart?.products?.length > 0 && (
             <>
+            <div className="flex justify-between w-full">
+
             <div>
               <p> Price : {isShowPrice.toLocaleString()} </p>
+            </div> 
+            <div className="  justify-end px-4 ">
+
+            <button className="  hover:text-red-600 transition " 
+              onClick={handleClear}
+            > 
+              clear all
+            </button>
+            </div>
             </div>
               <button
                 className=" cursor-pointer w-full bg-black text-white py-3 rounded-lg font-semibold

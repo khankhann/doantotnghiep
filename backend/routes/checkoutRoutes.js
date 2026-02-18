@@ -8,16 +8,17 @@ const { protect } = require("../middleware/authMiddleware");
 const router = express.Router();
 // POST / api / checkout
 
-router.post("/", protect, async (req, res) => {
-  const { checkoutItems, shippingAddress, paymentMethod, totalPrice } = req.body;
 
-  if (!checkoutItems || checkoutItems.length === 0) {
+router.post("/", protect, async (req, res) => {
+  const { checkoutItem, shippingAddress, paymentMethod, totalPrice } = req.body;
+
+  if (  !checkoutItem || checkoutItem.length === 0) {
     return res.status(400).json({ message: "no items in checkout" });
   }
   try {
     const newCheckout = await Checkout.create({
       user: req.user._id,
-      checkoutItems: checkoutItems,
+      checkoutItem: checkoutItem,
       shippingAddress,
       paymentMethod,
       totalPrice,
@@ -31,6 +32,21 @@ router.post("/", protect, async (req, res) => {
     res.status(500).json({message : "server error "})
   }
 });
+
+// GET / api / chechout / :id
+router.get('/:id', protect, async(req, res)=>{
+  try {
+const checkout = await Checkout.findById(req.params.id)
+if(checkout){
+  res.status(200).json(checkout)
+}else{
+  res.status(404).json({message : "khong tim thay "})
+}
+  }catch(error){
+console.error(error)
+res.status(500).json({message : "Server error"})
+  }
+})
 
 // PUT / api / checkout / :id/pay
 router.put("/:id/pay", protect, async (req, res) => {

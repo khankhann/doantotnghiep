@@ -1,5 +1,5 @@
 import { createSlice , createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+
 import api from "../../api/axiosClients";
 
 // load cart from localStorage 
@@ -70,6 +70,19 @@ const response = await api({
     method : "delete",
     url : `${import.meta.env.VITE_BACKEND_URL}/api/cart`,
     data : {productId, guestId, userId, quantity, size, color}
+})
+return response.data
+    }catch(err){
+console.error(err)
+return rejectWithValue(err.response.data)
+    }
+})
+
+// deleteAllCart  
+export const deleteCart = createAsyncThunk("cart/deleteCart", async({userId , guestId}, {rejectWithValue})=>{
+    try{
+const response = await api.delete(`${import.meta.env.VITE_BACKEND_URL}/api/cart/clear`,{
+    data: {userId, guestId}
 })
 return response.data
     }catch(err){
@@ -162,6 +175,20 @@ const cartSlice = createSlice({
             saveCartToStorage(action.payload)
         })
         .addCase(deleteCartItem.rejected, (state, action)=> {
+            state.loading = false
+            state.error = action.payload.message || "Failed to delete item from cart"
+        }).addCase(deleteCart.pending, (state)=> {
+            state.loading = true 
+            state.error = null
+        })
+        .addCase(deleteCart.fulfilled, (state, action)=> {
+            state.loading = false
+           const empty = {products : []}
+           state.cart = empty
+             localStorage.removeItem("cart")
+            saveCartToStorage(empty)
+        })
+        .addCase(deleteCart.rejected, (state, action)=> {
             state.loading = false
             state.error = action.payload.message || "Failed to delete item from cart"
         })

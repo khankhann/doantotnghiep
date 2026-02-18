@@ -1,5 +1,6 @@
 const express = require("express")
 const Order = require("../models/Order")
+const CheckOut = require("../models/Checkout")
 const {protect} = require("../middleware/authMiddleware")
 const router = express.Router()
 
@@ -9,7 +10,7 @@ const router = express.Router()
 
 router.get("/my-orders", protect , async(req, res)=>{
     try { 
-const orders = await Order.find({user : req.user._id}).sort({
+const orders = await CheckOut.find({user : req.user._id}).sort({
     createdAt: -1,
 })
 res.json(orders)
@@ -25,7 +26,7 @@ res.json(orders)
 
 router.get("/:id", protect , async(req, res)=>{
     try {
-        const order = await Order.findById(req.params.id).populate(
+        const order = await CheckOut.findById(req.params.id).populate(
             "user", "name email"
         )
         if(!order){

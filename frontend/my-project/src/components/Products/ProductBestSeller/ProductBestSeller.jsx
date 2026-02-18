@@ -103,11 +103,11 @@ function ProductBestSeller({ productId }) {
   if (!selectedProduct || selectedProduct.length === 0) {
     return <p className="text-center mt-10">Product not found</p>;
   }
-console.log(selectedProduct, mainImage)
+
   return (
     selectedProduct && (
       <section className="max-w-6xl mx-auto bg-white p-8 rounded-lg">
-        <h2 className=" text-3xl text-center font-bold mb-4 ">Best Seller</h2>
+        <h2 className=" text-3xl text-center font-bold mb-4 ">  </h2>
         <div className="flex flex-col md:flex-row">
           {/* left thumbnail */}
           <div className="hidden md:flex flex-col space-y-4 mr-6">

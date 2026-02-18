@@ -12,7 +12,7 @@ const subscribeRoutes = require("./routes/subscribeRoutes")
 const adminRoutes = require("./routes/adminRoutes")
 const productAdminRoutes = require("./routes/productAdminRoutes")
 const orderAdminRoutes = require("./routes/adminOrderRoutes")
-
+const momoRoutes = require("./routes/momoRoutes")
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -35,6 +35,7 @@ app.use("/api/checkout", checkoutRoutes)
 app.use("/api/orders", orderRoutes)
 app.use("/api/upload", uploadRoutes)
 app.use("/api/subscribe", subscribeRoutes)
+app.use("/api/momo", momoRoutes)
 // admin 
 app.use("/api/admin/users", adminRoutes)
 app.use("/api/admin/products", productAdminRoutes)

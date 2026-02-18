@@ -24,6 +24,8 @@ export const createCheckout = createAsyncThunk("checkout/createCheckout", async(
 
         }
 })
+
+
 const checkoutSlice = createSlice({
         name : "checkout",
         initialState : {

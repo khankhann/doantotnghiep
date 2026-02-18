@@ -161,6 +161,31 @@ router.delete("/", async (req, res)=> {
   }
 });
 
+// route Delete / api / cart 
+// remove cart 
+
+router.delete("/clear", async (req, res) => {
+  const { guestId, userId } = req.body;
+  try {
+    let cart = await getCart(userId, guestId);
+    if (!cart) return res.status(404).json({ message: "Không tìm thấy giỏ hàng" });
+
+    // Xóa sạch mảng products và reset tổng tiền
+    cart.products = [];
+    cart.totalPrice = 0;
+
+    await cart.save();
+    return res.status(200).json(cart); // Trả về giỏ hàng trống { products: [], totalPrice: 0 }
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
+}); 
+
+
+
+
+
 // Get / api / cart 
 // get logged  user or guest user 
 router.get("/", async (req, res)=>{

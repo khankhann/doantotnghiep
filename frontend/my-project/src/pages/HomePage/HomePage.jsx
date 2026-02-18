@@ -43,6 +43,7 @@ function HomePage() {
       <Banner />
       <GenderCollection />
       <NewArrivals />
+      <h2 className="text-3xl text-center font-bold mb-4"> Product Best Seller </h2>
       {bestSellerProduct ? (<ProductBestSeller productId = {bestSellerProduct._id} /> ) : (
         <p className="text-center ">Loading best seller product...  </p>
       ) }

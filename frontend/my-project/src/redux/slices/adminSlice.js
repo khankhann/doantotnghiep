@@ -8,7 +8,7 @@ export const fetchUsers = createAsyncThunk("admin/fetchUsers", async()=>{
             Authorization : `Bearer ${localStorage.getItem("userToken")}`
         }
     })
-    response.data
+  return  response.data
 })
 
 // add the create user 
@@ -21,6 +21,7 @@ export const addUser = createAsyncThunk("admin/addUser", async(userData , {rejec
                 }
             }
         )
+        return response.data
     }catch(err){
         console.error(err)
         return rejectWithValue(err.response.data)
@@ -30,14 +31,14 @@ export const addUser = createAsyncThunk("admin/addUser", async(userData , {rejec
 // update user info 
 export const updateUser = createAsyncThunk("admin/updateUser", async({id,name, email, role})=>{
     const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/admin/users/${id}`,
-        {name,email , role},
+        {name ,email , role},
         {
             headers : {
                 Authorization : `Bearer ${localStorage.getItem("userToken")}`
             }
         }
     )
-    response.data
+  return response.data.user
 })
 
 // delete user 
@@ -65,15 +66,17 @@ const adminSlice = createSlice({
         builder 
         .addCase(fetchUsers.pending , (state)=>{
             state.loading = true
+            state.error = null
         }).addCase(fetchUsers.fulfilled , (state, action )=>{
-            state.loading = true
+            state.loading = false
             state.users = action.payload
-        }).addCase(fetchUsers.rejected , (state)=>{
+        }).addCase(fetchUsers.rejected , (state, action )=>{
             state.loading = false
             state.error = action.error.message
         })
         .addCase(updateUser.fulfilled , (state, action) =>{
                 const updatedUser = action.payload
+               
                 const userIndex = state.users.findIndex((user) => user._id === updatedUser._id)
                 if(userIndex !== -1){
                     state.users[userIndex] = updatedUser

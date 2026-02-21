@@ -4,7 +4,7 @@ const { protect, admin } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// POST / api / prod
+// POST / api / product
 // create new product
 router.post("/", protect, admin, async (req, res) => {
   try {

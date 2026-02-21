@@ -9,7 +9,7 @@ function LoginPage() {
 const dispatch = useDispatch()
 const navigate = useNavigate()
 const location = useLocation()
-const {user , guestId } = useSelector((state) => state.auth)
+const {user , guestId , loading } = useSelector((state) => state.auth)
 const {cart } = useSelector((state) => state.cart)
 
 // get redirect parameter and check if is's checkout or something 
@@ -71,7 +71,7 @@ const handleSubmit = (e)=>{
           <button
             className="w-full bg-black text-white p-2 rounded-lg 
           font-semibold hover:bg-gray-500 transition-all duration-500 ease-in-out  ">
-            Sign In
+         {loading ? "loading ... " : "Sign In"}
           </button>
           <p className="mt-6 text-center text-sm">
             Don't have an account ? {""}

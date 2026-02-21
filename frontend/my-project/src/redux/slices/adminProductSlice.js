@@ -2,12 +2,12 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
 // async thunk to fetch admin product
-const fetchAdminProducts = createAsyncThunk(
+export const fetchAdminProducts = createAsyncThunk(
   "adminProducts/fetchAdminProducts",
   async () => {
-    const response = await axios.get(`${API_URL}/api/admin/products`, {
+    const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/products`, {
       headers: {
-        Authorization: USER_TOKEN,
+        Authorization: `Bearer ${localStorage.getItem("userToken")}`,
       },
     });
     return response.data;
@@ -16,19 +16,19 @@ const fetchAdminProducts = createAsyncThunk(
  
 // async create a new product 
 export const createProduct = createAsyncThunk("adminProducts/createProduct", async(productData)=>{
-    const response = await axios.post(`${API_URL}/api/admin/products`, productData,{
+    const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/admin/products`, productData,{
       headers:{
-        Authorization : USER_TOKEN
+        Authorization : `Bearer ${localStorage.getItem("userToken")}`
       }
     })
  return response.data   
 })
 
 // update a existing product 
-const updateProduct = createAsyncThunk("adminProducts/updateProduct", async({id, productData})=>{
-const response = await axios.put(`${API_URL}/api/admin/products/${id}`, productData, {
+export const updateProduct = createAsyncThunk("adminProducts/updateProduct", async({id, productData})=>{
+const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/admin/products/${id}`, productData, {
   headers: {
-    Authorization : USER_TOKEN
+    Authorization : `Bearer ${localStorage.getItem("userToken")}`
   }
 })  
 return response.data
@@ -36,9 +36,9 @@ return response.data
 
 // async thunk to delete a product 
 export const deleteProduct =createAsyncThunk("adminProducts/deleteProduct", async({id})=> {
-  await axios.delete(`{API_URL}/api/admin/product/${id}`, {
+  await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/admin/products/${id}`, {
     headers :{
-      Authorization : USER_TOKEN
+      Authorization : `Bearer ${localStorage.getItem("userToken")}`
     }
   })
   return id 

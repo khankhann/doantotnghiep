@@ -21,6 +21,8 @@ import OrderPage from "@components/Admin/OrderPage/OrderPage";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { fetchCart } from '@redux/slices/cartSlice';
+import ProtectedRoute from "@components/Common/ProtectedRoute/ProtectedRoute";
+import CreateProductPage from "@components/Admin/CreateProductPage/CreateProductPage";
 function App() {
   const dispatch = useDispatch()
   const {user} = useSelector((state) => state.auth)
@@ -53,11 +55,12 @@ function App() {
             <Route path="order/:id" element={<OrderDetailPage />} />
             <Route path="/my-orders" element={<MyOrderPage />} />
           </Route>
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route path="/admin" element={ <ProtectedRoute role="admin"> <AdminLayout /> </ProtectedRoute>}>
             <Route index element={<AdminHomePage />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="products" element={<ProductManagement />} />
             <Route path="products/:id/edit" element={<EditProductPage />} />
+            <Route path="products/create" element={ <CreateProductPage /> }/>
             <Route path="orders" element={<OrderPage />} />
           </Route>
         </Routes>

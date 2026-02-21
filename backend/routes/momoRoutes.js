@@ -11,6 +11,8 @@ router.post("/payment", async(req, res)=>{
     var orderInfo = req.body.orderInfo || "Pay with MOMO";
     var partnerCode = 'MOMO';
     var redirectUrl = 'https://doantotnghiep-mu.vercel.app/order-confirmation';
+    // var redirectUrl = 'http://localhost:5173/order-confirmation';
+
     var ipnUrl = 'https://webhook.site/b3088a6a-2d17-4f8d-a383-71389a6c600b';
     var requestType = "payWithMethod";
     var amountRaw = req.body.amount

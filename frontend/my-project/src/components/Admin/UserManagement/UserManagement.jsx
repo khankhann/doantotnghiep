@@ -1,21 +1,31 @@
-import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { addUser } from "@redux/slices/adminSlice";
+import { deleteUser, fetchUsers, updateUser } from "@redux/slices/adminSlice";
 
 function UserManagement() {
-  const users = [
-    {
-      _id: 123123,
-      name: "Jonh Joe",
-      email: "jonh@gmail.com",
-      role: "admin",
-    },
-  ];
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
+  const { users, loading, error } = useSelector((state) => state.admin);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
-    role: "customer",
+    role: "",
   });
+  useEffect(() => {
+    if (user && user.role === "admin") {
+      dispatch(fetchUsers());
+    }
+  }, [dispatch, user]);
+  useEffect(() => {
+    if (!user && user.role !== "admin") {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,21 +36,30 @@ function UserManagement() {
   };
   const handleSubmit = (e) => {
     e.preventDefault();
+    dispatch(addUser(formData));
     setFormData({
       name: "",
       email: "",
       password: "",
-      role: "customer",
+      role: "",
     });
   };
-const handleRoleChange = (userId, newRole)=>{
 
-}
-const handleDelete = (userId)=>{
-  if(window.confirm("Are you sure you want to delete this user ?")){
-    console.log("delete")
-  }
-}
+  const handleRoleChange = (userId, newRole) => {
+    dispatch(
+      updateUser({
+        id: userId,
+        role: newRole,
+      }),
+    );
+  };
+  const handleDelete = (userId) => {
+    if (window.confirm("Are you sure you want to delete this user ?")) {
+      dispatch(deleteUser(userId));
+    }
+  };
+  if (loading) return <p className="text-center"> Loading ... </p>;
+  if (error) return <p className="text-center"> error : {error} </p>;
   return (
     <div className="max-w-7xl mx-auto p-6 ">
       <h2 className="text-2xl font-bold mb-4 ">User Management</h2>
@@ -118,20 +137,26 @@ const handleDelete = (userId)=>{
                   </td>
                   <td className="p-4">{user.email}</td>
                   <td className="p-4">
-                  <select value={user.role} onChange={(e)=> handleRoleChange(user._id, e.target.value)}
-                    className="p-2 border rounded"
-                    >
-                      <option value="admim"> Admmin</option>
+                    <select
+                      value={user.role}
+                      onChange={(e) =>
+                        handleRoleChange(user._id, e.target.value)
+                      }
+                      className="p-2 border rounded">
+                      <option value="admin"> Admin</option>
                       <option value="customer"> Customer</option>
-
-
-                  </select>
+                    </select>
                   </td>
                   <td className="p-4">
-                    <button onClick={()=> handleDelete(user._id)} 
-                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-800 transition-all duration-300 ease-in-out"
-                    >
-                  Delete
+                    <button
+                      onClick={() => handleDelete(user._id)}
+                      className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-800 transition-all duration-300 ease-in-out">
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(user._id)}
+                      className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-800 transition-all duration-300 ease-in-out">
+                      Delete
                     </button>
                   </td>
                 </tr>

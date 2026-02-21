@@ -10,7 +10,7 @@ const router = express.Router()
 
 router.get("/my-orders", protect , async(req, res)=>{
     try { 
-const orders = await CheckOut.find({user : req.user._id}).sort({
+const orders = await Order.find({user : req.user._id}).sort({
     createdAt: -1,
 })
 res.json(orders)
@@ -26,7 +26,7 @@ res.json(orders)
 
 router.get("/:id", protect , async(req, res)=>{
     try {
-        const order = await CheckOut.findById(req.params.id).populate(
+        const order = await Order.findById(req.params.id).populate(
             "user", "name email"
         )
         if(!order){
@@ -41,4 +41,7 @@ router.get("/:id", protect , async(req, res)=>{
         res.status(500).json({message : "server error"})
     }
 })
+
+
+
 module.exports = router 

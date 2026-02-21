@@ -48,13 +48,18 @@ console.log(products)
         <FaFilter className="mr-2" />
         Filters
       </button>
-
+{isSideBarOpen && (
+        <div 
+          className="fixed inset-0  bg-[#0000004d] lg:hidden"
+          onClick={() => setIsSideBarOpen(false)} 
+        ></div>
+      )}
       {/* Filrer sidebar  */}
       <div
         ref={sideBarRef}
         className={`${
           isSideBarOpen ? "translate-x-0" : "-translate-x-full"
-        } fixed inset-y-0 z-50 
+        } fixed inset-y-0  
                 left-0 w-64 bg-white overflow-y-auto
                  transition-transform duration-500 lg:static lg:translate-x-0 `}>
         <FilterSideBar />

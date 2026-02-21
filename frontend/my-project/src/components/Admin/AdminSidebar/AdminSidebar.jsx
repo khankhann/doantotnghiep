@@ -1,11 +1,25 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { FaUser, FaStore, FaClipboardList, FaBoxOpen, FaSignOutAlt } from "react-icons/fa";
+import {
+  FaUser,
+  FaStore,
+  FaClipboardList,
+  FaBoxOpen,
+  FaSignOutAlt,
+} from "react-icons/fa";
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "@redux/slices/authSlice";
+import { clearCart } from "@redux/slices/cartSlice";
+import { useEffect } from "react";
 function AdminSidebar() {
-const navigate = useNavigate()
-    const handleLogout = () => {
-        navigate("/")
-}
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+  const handleLogout = () => {
+    dispatch(logout());
+    dispatch(clearCart());
 
+    navigate("/");
+  };
 
   return (
     <div className="p-6">
@@ -14,6 +28,7 @@ const navigate = useNavigate()
           Shop
         </Link>
       </div>
+      <h2 className="text-center"> Chao mung {user.name} </h2>
       <h2 className="text-xl font-medium mb-6 text-center">Admin Dashboard</h2>
       <nav className="flex flex-col space-y-2 ">
         <NavLink
@@ -57,14 +72,15 @@ const navigate = useNavigate()
           <span> Shop </span>
         </NavLink>
       </nav>
-      <div className="mt-6"> 
-          <button onClick={handleLogout} className="w-full bg-red-500 hover:bg-amber-600 text-white transition-all duration-500 ease-in-out
+      <div className="mt-6">
+        <button
+          onClick={handleLogout}
+          className="w-full bg-red-500 hover:bg-amber-600 text-white transition-all duration-500 ease-in-out
           py-2 px-4 rounded flex items-center justify-center space-x-2
-          "> 
+          ">
           <FaSignOutAlt />
-        <span> LoutOut</span>
-          </button>
-
+          <span> LoutOut</span>
+        </button>
       </div>
     </div>
   );

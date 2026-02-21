@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
-import { fetchProductDetails } from "@redux/slices/productsSlice";
+import { createProduct } from "@redux/slices/adminProductSlice";
 import api from "../../../api/axiosClients";
-import { updateProduct } from "@redux/slices/adminProductSlice";
 
-function EditProductPage() {
+function CreateProductPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { id } = useParams();
-  const { selectedProduct, loading, error } = useSelector(
+   const { loading, error } = useSelector(
     (state) => state.products,
   );
   const [uploading, setUploading] = useState(false);
@@ -30,17 +28,6 @@ function EditProductPage() {
     images: [],
   });
 
-  useEffect(() => {
-    if (id) {
-      dispatch(fetchProductDetails(id));
-    }
-  }, [dispatch, id]);
-
-  useEffect(() => {
-    if (selectedProduct) {
-      setProductData(selectedProduct);
-    }
-  }, [selectedProduct]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -83,12 +70,7 @@ function EditProductPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    dispatch(
-      updateProduct({
-        id,
-        productData,
-      }),
-    );
+    dispatch(createProduct(productData));
     navigate("/admin/products");
   };
 
@@ -134,7 +116,48 @@ function EditProductPage() {
             className="w-full border border-gray-300 rounded-md p-2"
           />
         </div>
+    {/* Category */}
+        <div className="mb-6">
+          <label className="block font-semibold mb-2">Category</label>
+          <input 
+            type="text" 
+            name="category" 
+            value={productData.category} 
+            onChange={handleChange} 
+            className="w-full border border-gray-300 rounded-md p-2" 
+            required 
+          />
+        </div>
 
+        {/* Brand */}
+        <div className="mb-6">
+          <label className="block font-semibold mb-2">Brand</label>
+          <input 
+            type="text" 
+            name="brand" 
+            value={productData.brand} 
+            onChange={handleChange} 
+            className="w-full border border-gray-300 rounded-md p-2" 
+            required 
+          />
+        </div>
+
+        {/* Gender */}
+        <div className="mb-6">
+          <label className="block font-semibold mb-2">Gender</label>
+          <select 
+            name="gender" 
+            value={productData.gender} 
+            onChange={handleChange} 
+            className="w-full border border-gray-300 rounded-md p-2" 
+            required
+          >
+            <option value="">-- Chọn giới tính --</option>
+
+            <option value="Men">Men</option>
+            <option value="Women">Women</option>
+          </select>
+        </div>
         {/* stack  */}
         <div className="mb-6">
           <label className="block font-semibold mb-2">Count in Stock</label>
@@ -230,4 +253,4 @@ function EditProductPage() {
   );
 }
 
-export default EditProductPage;
+export default CreateProductPage;

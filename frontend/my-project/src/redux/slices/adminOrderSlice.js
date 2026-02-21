@@ -1,8 +1,8 @@
-import { createSlice , createAsyncThunk, __DO_NOT_USE__ActionTypes } from "@reduxjs/toolkit";
+import { createSlice , createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
 // fetch all product admin order 
-export const fetchAllOrders = createAsyncThunk("adminOrders/fetchAllOrders", async(__DO_NOT_USE__ActionTypes, {rejectWithValue})=>{
+export const fetchAllOrders = createAsyncThunk("adminOrders/fetchAllOrders", async(_, {rejectWithValue})=>{
     try {
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/orders`, {
             headers : {
@@ -18,9 +18,7 @@ export const fetchAllOrders = createAsyncThunk("adminOrders/fetchAllOrders", asy
 // update order status 
 export const updateOrderStatus = createAsyncThunk("adminOrders/updateOrdersStatus", async({id, status}, {rejectWithValue})=>{
  try{
-const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/admin/orders/${id}`, {
-    status
-}, {
+const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/admin/orders/${id}`,{status}, {
     headers : {
         Authorization : `Bearer ${localStorage.getItem("userToken")}`
     }
@@ -91,7 +89,7 @@ const adminOrderSlice = createSlice({
          })
         //  delete order 
          .addCase(deleteOrder.fulfilled , (state , action)=>{
-            state.orders = state.orders.filter((order)=> order._id !== action.payload._id)
+            state.orders = state.orders.filter((order)=> order._id !== action.payload)
          })
     }
 })

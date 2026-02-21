@@ -19,6 +19,7 @@ function Navbar() {
     setIsNavMobileOpen,
   } = useContext(SideBarContext);
 const {cart} = useSelector((state)=> state.cart)
+const {user} = useSelector((state)=> state.auth)
 const cartItemCount = cart?.products?.reduce((total , product) => {
   return total + product.quantity 
 },0) || 0
@@ -68,9 +69,11 @@ const cartItemCount = cart?.products?.reduce((total , product) => {
         </div>
         {/* {Right - Menu} */}
         <div className="flex items-center space-x-4">
-          <Link
+          {user && user.role === "admin" && (
+            <Link
             to="/admin"
             className=" block bg-black px-2 rounded text-sm text-white ">Admin</Link>
+          )}
           <Link
             to="/profile"
             className="hover:text-black transition-all duration-500 ease-in-out">

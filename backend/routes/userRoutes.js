@@ -77,9 +77,10 @@ router.post("/login", async (req, res) => {
       },
     };
     const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: "5m",
+      expiresIn: "1h",
     });
-    const refreshToken = jwt.sign(payload,process.env.JWT_REFRESH_SECRET,{ expiresIn: "1d" })
+    const refreshToken = jwt.sign(payload,process.env.JWT_REFRESH_SECRET,{ 
+      expiresIn: "1d" })
     user.refreshToken = refreshToken
     await user.save()
 

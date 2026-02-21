@@ -1,24 +1,45 @@
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
+import { deleteProduct, fetchAdminProducts } from "../../../redux/slices/adminProductSlice";
 
 function ProductManagement() {
-  const products = [
-    {
-      _id: 123123,
-      name: "shirt",
-      price: 110,
-      sku: "123123",
-    },
-  ];
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const {products, loading , error} = useSelector((state)=> state.adminProducts)
+ 
+  useEffect(()=>{
+    dispatch(fetchAdminProducts())
+  },[dispatch])
+
+
+
+
+
+
 
   const handleDelete = (productId) => {
     if (window.confirm("Are you want to delete the Product ?")) {
-      console.log("delete product");
+      dispatch(deleteProduct({
+        id : productId
+      }))
     }
   };
+if(loading ) return <p className="text-center"  > Loading ...</p>
+if(error ) return <p className="text-center"  > Error: {error}</p>
 
   return (
     <div className="max-w-7xl mx-auto p-6">
+      <div className="flex justify-between items-center mb-6 "> 
       <h2 className="text-2xl font-bold mb-6 ">Product Management</h2>
+      <Link 
+      to = "/admin/products/create"
+      className=" bg-green-500 text-center text-white px-4 py-2 rounded hover:bg-green-600 transistion-all shadow-md "
+      > 
+      Them san pham
+      </Link>
+
+      </div>
       <div className="overflow-x-auto shadow-md sm:rounded-lg">
         <table className="min-w-full text-left text-gray-500">
           <thead className="bg-gray-100 text-xs uppercase text-gray-700">
@@ -35,7 +56,7 @@ function ProductManagement() {
                 return (
                   <tr
                     key={product._id}
-                    className="border-b hover:gray-50 cursor-pointer  ">
+                    className="border-b hover:bg-gray-50 cursor-pointer transition-all ">
                     <td className="p-4 font-medium text-gray-900 whitespace-nowrap ">
                       {product.name}
                     </td>
@@ -48,7 +69,7 @@ function ProductManagement() {
                         Edit
                       </Link>
                       <button
-                        onClick={() => handleDetele(product._id)}
+                        onClick={() => handleDelete(product._id)}
                         className="bg-red-500 text-white px-2 py-1 rounded mr-2 hover:bg-red-700 transition-all duration-300 ease-in-out">
                         Delete
                       </button>

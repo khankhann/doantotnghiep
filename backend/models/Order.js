@@ -67,7 +67,8 @@ paymentStatus: {
 },
 status : {
     type : String ,
-    enum: ["Processing", "shipped", "Delivered","Cancelled"]
+    enum: ["Processing", "Shipped", "Delivered","Cancelled"],
+    default : "Processing"
 }
 
 },

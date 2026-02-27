@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { loginUser } from "@redux/slices/authSlice";
 import {useDispatch, useSelector} from "react-redux";
 import { mergeCart } from '@redux/slices/cartSlice';
+import PageTransition2 from "../../components/PageTransition/PageTransition2";
 
 function LoginPage() {
 const dispatch = useDispatch()
@@ -35,6 +36,8 @@ const handleSubmit = (e)=>{
     dispatch(loginUser({email, password}))
 }
   return (
+    <PageTransition2>
+
     <div className="flex">
       <div className="w-full md:w-1/2 flex flex-col justify-center items-center p-8 md:p-12 ">
         <form 
@@ -53,7 +56,7 @@ const handleSubmit = (e)=>{
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-2 border rounded"
               placeholder="Enter your email address"
-            />
+              />
           </div>
           <div className="mb-4">
             <label className="block text-sm font-semibold mb-2">
@@ -66,11 +69,11 @@ const handleSubmit = (e)=>{
               onChange={(e) => setPassword(e.target.value)}
               className="w-full p-2 border rounded"
               placeholder="Enter your password"
-            />
+              />
           </div>
           <button
             className="w-full bg-black text-white p-2 rounded-lg 
-          font-semibold hover:bg-gray-500 transition-all duration-500 ease-in-out  ">
+            font-semibold hover:bg-gray-500 transition-all duration-500 ease-in-out  ">
          {loading ? "loading ... " : "Sign In"}
           </button>
           <p className="mt-6 text-center text-sm">
@@ -87,10 +90,11 @@ const handleSubmit = (e)=>{
             src={bgLogin}
             alt="Login "
             className=" h-full w-full object-cover "
-          />
+            />
         </div>
       </div>
     </div>
+            </PageTransition2>
   );
 }
 

@@ -156,6 +156,8 @@ function CreateProductPage() {
 
             <option value="Men">Men</option>
             <option value="Women">Women</option>
+            <option value="Women">Unisex</option>
+
           </select>
         </div>
         {/* stack  */}

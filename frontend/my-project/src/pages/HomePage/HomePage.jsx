@@ -9,6 +9,8 @@ import FeatureSection from "@components/Products/FeatureSection/FeatureSection";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import { fetchProductsbyFilter } from "@redux/slices/productsSlice";
+import ProductSaleOff from "@components/Products/ProductSaleOff/ProductSaleOff";
+import PageTransition from '@components/PageTransition/PageTransition';
 import api from "../../api/axiosClients";
 
 function HomePage() {
@@ -30,6 +32,7 @@ function HomePage() {
         const response = await api.get(
           `${import.meta.env.VITE_BACKEND_URL}/api/products/best-seller`,
         );
+
         setBestSellerProduct(response.data);
       } catch (err) {
         console.error(err);
@@ -39,6 +42,8 @@ function HomePage() {
   }, [dispatch]);
 
   return (
+    <PageTransition >
+
     <div>
       <Banner />
       <GenderCollection />
@@ -50,9 +55,11 @@ function HomePage() {
       
       <ProductAlsoLike products ={products} loading = {loading } error = {error} />
       <TopWearWomen />
+      <ProductSaleOff />
       <FeatureCollection />
       <FeatureSection />
     </div>
+      </PageTransition>
   );
 }
 

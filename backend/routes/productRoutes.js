@@ -1,12 +1,15 @@
 const express = require("express");
 const Product = require("../models/Product");
+const Notification = require("../models/Notification");
+const User = require("../models/User");
 const { protect, admin } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// POST / api / product
+// POST /api/products
 // create new product
 router.post("/", protect, admin, async (req, res) => {
+  
   try {
     const {
       name,
@@ -52,15 +55,19 @@ router.post("/", protect, admin, async (req, res) => {
       sku,
       user: req.user._id, // phan hoi admin ai da tao ra san pham nay
     });
-
-    const createdProduct = await product.save();
-    res.status(201).json(createdProduct);
+    
+   const newProduct = await product.save();
+    res.status(201).json(newProduct);
+   
+  
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");
   }
 });
-// PUT / api / products/ :id
+
+
+// PUT /api/products/:id
 router.put("/:id", protect, admin, async (req, res) => {
   try {
     const {
@@ -121,8 +128,7 @@ router.put("/:id", protect, admin, async (req, res) => {
   }
 });
 
-// Delete / api / products /:id
-
+// Delete /api/products/:id
 router.delete("/:id", protect, admin, async (req, res) => {
   try {
     // tim product bang id
@@ -140,7 +146,7 @@ router.delete("/:id", protect, admin, async (req, res) => {
   }
 });
 
-// route GET / api / products
+// route GET /api/products
 // lay tat ca product
 router.get("/", async (req, res) => {
   try {
@@ -223,7 +229,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// route Get / api / products / best-seller
+// route Get /api/products/best-seller
 // retrieve the product with highest rating
 router.get("/best-seller", async (req, res) => {
   try {
@@ -241,8 +247,7 @@ router.get("/best-seller", async (req, res) => {
   }
 });
 
-// route get / api / products / new-arrivals
-
+// route get /api/products/new-arrivals
 router.get("/new-arrivals", async (req, res) => {
   try {
     const newArrivals = await Product.find().sort({ createdAt: -1 }).limit(8);
@@ -252,10 +257,28 @@ router.get("/new-arrivals", async (req, res) => {
     res.status(500).send("server error");
   }
 });
+// GET /api/products/recommend?bodyType=Slim
+router.get("/recommend", async (req, res) => {
+  const { bodyType } = req.query; // Nhận chữ "Slim", "Fit" hoặc "Plus-size" từ Frontend
 
-// route  GET / api / products/:id
+  try {
+    if (!bodyType) {
+      return res.status(400).json({ message: "Thiếu thông tin bodyType" });
+    }
+
+    // Tìm những sản phẩm có chứa cái tag đó trong mảng suitableForBodyType
+    const recommendedProducts = await Product.find({ 
+        suitableForBodyType: { $in: [bodyType] } 
+    }).limit(8); // Lấy tối đa 8 món show cho đẹp
+
+    res.status(200).json(recommendedProducts);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi Server" });
+  }
+});
+// route  GET /api/products/:id
 // get a single product by id
-
 router.get("/:id", async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -270,7 +293,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// route Get / api / products / similar / :id
+// route Get /api/products/similar/:id
 // retrieve similar products base on the current product gender and category
 router.get("/similar/:id", async (req, res) => {
   const { id } = req.params;
@@ -281,7 +304,6 @@ router.get("/similar/:id", async (req, res) => {
     }
     const similarProduct = await Product.find({
       _id: { $ne: id },
-
       gender: product.gender,
       category: product.category,
     }).limit(6);
@@ -291,5 +313,7 @@ router.get("/similar/:id", async (req, res) => {
     res.status(500).send("server error");
   }
 });
+
+
 
 module.exports = router;

@@ -134,7 +134,50 @@ function EditProductPage() {
             className="w-full border border-gray-300 rounded-md p-2"
           />
         </div>
+{/* Category */}
+        <div className="mb-6">
+          <label className="block font-semibold mb-2">Category</label>
+          <input 
+            type="text" 
+            name="category" 
+            value={productData.category} 
+            onChange={handleChange} 
+            className="w-full border border-gray-300 rounded-md p-2" 
+            required 
+          />
+        </div>
 
+        {/* Brand */}
+        <div className="mb-6">
+          <label className="block font-semibold mb-2">Brand</label>
+          <input 
+            type="text" 
+            name="brand" 
+            value={productData.brand} 
+            onChange={handleChange} 
+            className="w-full border border-gray-300 rounded-md p-2" 
+            required 
+          />
+        </div>
+
+        {/* Gender */}
+        <div className="mb-6">
+          <label className="block font-semibold mb-2">Gender</label>
+          <select 
+            name="gender" 
+            value={productData.gender} 
+            onChange={handleChange} 
+            className="w-full border border-gray-300 rounded-md p-2" 
+            required
+          >
+            <option value="">-- Chọn giới tính --</option>
+
+            <option value="Men">Men</option>
+            <option value="Women">Women</option>
+            <option value="Women">Unisex</option>
+
+          </select>
+        </div>
         {/* stack  */}
         <div className="mb-6">
           <label className="block font-semibold mb-2">Count in Stock</label>

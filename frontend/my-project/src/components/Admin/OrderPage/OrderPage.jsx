@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchAllOrders, updateOrderStatus } from '@redux/slices/adminOrderSlice';
-import { configureStore } from '@reduxjs/toolkit';
+
 function OrderPage() {
   const navigate = useNavigate()
 const dispatch = useDispatch()
@@ -32,7 +32,12 @@ if(!user  && user.role !== "admin"){
           <thead className="bg-gray-100 text-xs uppercase text-gray-700">
             <tr>
               <th className="py-3 px-4">Order ID</th>
+              <th className="py-3 px-4">Product name</th>
+              <th className="py-3 px-4">Quantity </th>
+
               <th className="py-3 px-4">Customer ID</th>
+              <th className="py-3 px-4">Date Order</th>
+
               <th className="py-3 px-4">Total Price</th>
               <th className='py-3 px-4'>Date Delivered </th>
               <th className="py-3 px-4">Status</th>
@@ -49,7 +54,11 @@ if(!user  && user.role !== "admin"){
                     <td className="py-4 px-4 font-medium text-gray-900 whitespace-nowrap">
                       #{order?._id}
                     </td>
+                    <td className="p-4">{order?.orderItems[0]?.name} </td>
+                    <td className="p-4 text-center">{order?.orderItems[0]?.quantity} </td>
                     <td className="p-4">{order?.user?.name || "user has been deleted"}</td>
+                    <td className='p-4'>{order?.paidAt ? new Date(order?.paidAt).toLocaleString("vi-VN") : "" } </td>
+
                     <td className="p-4">{order?.totalPrice.toFixed(2)}</td>
                     <td className='p-4'>{order?.isDelivered ? new Date(order.deliveredAt).toLocaleString("vi-VN") : " chua giao " } </td>
                     <td className="p-4">

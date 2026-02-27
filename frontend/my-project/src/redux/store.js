@@ -7,7 +7,7 @@ import orderReducer from "@redux/slices/orderSlice";
 import adminReducer from "@redux/slices/adminSlice";
 import adminProductReducer from "@redux/slices/adminProductSlice";
 import adminOrderReducer from "@redux/slices/adminOrderSlice";
-
+import notificationReducer from "@redux/slices/notificationSlice";
 const store = configureStore({
     reducer : {
         auth : authReducer,
@@ -17,7 +17,8 @@ const store = configureStore({
         orders : orderReducer,
         admin : adminReducer ,
         adminProducts : adminProductReducer ,
-        adminOrders : adminOrderReducer
+        adminOrders : adminOrderReducer ,
+        notifications : notificationReducer
     }
 }) 
 export default store;   

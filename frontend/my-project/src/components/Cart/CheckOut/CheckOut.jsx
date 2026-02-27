@@ -5,6 +5,7 @@ import PaypalButton from "../Paypal/PaypalButton.jsx";
 import { useDispatch, useSelector } from "react-redux";
 import { createCheckout } from "@redux/slices/checkoutSlice";
 import api from "../../../api/axiosClients.js";
+import { clearCart } from "@redux/slices/cartSlice.js";
 // import QRCode from "react-qr-code"; 
 
 function CheckOut() {
@@ -84,6 +85,8 @@ function CheckOut() {
           },
         }
       );
+      dispatch(clearCart())
+      localStorage.removeItem("cart");
       navigate("/order-confirmation");
     } catch (error) {
       console.error(error);

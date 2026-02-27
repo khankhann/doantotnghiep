@@ -6,7 +6,7 @@ function Banner() {
         <section className="relative "> 
             <img src={BannerImg}
             alt=""
-             className="w-full h-auto min:h-[300px] lg:h-[750px] object-cover object-center "  />
+             className="w-full h-auto min-h-[300px] lg:h-[750px] object-cover object-center "  />
             <div className=" absolute inset-0 bg-black/10 flex items-center justify-center ">
                 <div className="text-center text-white p-6">
                     <h1 className="text-4xl md:text-9xl font-bold tracking-tighter uppercase mb-4 ">

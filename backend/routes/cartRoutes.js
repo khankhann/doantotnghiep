@@ -1,5 +1,6 @@
 const express = require("express");
 const Cart = require("../models/Cart");
+const Order = require("../models/Order"); 
 const Product = require("../models/Product");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -21,61 +22,127 @@ router.post("/", async (req, res) => {
   try {
     const product = await Product.findById(productId);
     if (!product) {
-        return res.status(404).json({ message: "Product not found" });
+      return res.status(404).json({ message: "Product not found" });
     }
-    const qty = quantity && !isNaN(quantity) ? Number(quantity) : 1
+    const qty = quantity && !isNaN(quantity) ? Number(quantity) : 1;
+    const basePrice = Number(product.price || 0);
+
+    // ==========================================
+    // 🚀 1. LOGIC CHECK KHÁCH HÀNG (TẶNG 10% KHÁCH MỚI/LẶN 15 NGÀY)
+    // ==========================================
+    let userDiscount = 0;
+
+    if (!userId) {
+      // Guest chưa đăng nhập -> Tính là khách mới
+      userDiscount = 10;
+    } else {
+      const lastCreatedOrder = await Order.findOne({ user: userId }).sort({ createdAt: -1 });
+      const lastPaidOrder = await Order.findOne({ user: userId, isPaid: true }).sort({ paidAt: -1 });
+
+      if (!lastCreatedOrder && !lastPaidOrder) {
+        userDiscount = 10; // Chưa từng mua
+      } else {
+        let latestActivityTime = 0;
+        const createdTime = lastCreatedOrder ? new Date(lastCreatedOrder.createdAt).getTime() : 0;
+        const paidTime = lastPaidOrder ? new Date(lastPaidOrder.paidAt).getTime() : 0;
+        
+        latestActivityTime = Math.max(createdTime, paidTime);
+
+        if (latestActivityTime > 0) {
+          const diffInDays = (Date.now() - latestActivityTime) / (1000 * 60 * 60 * 24);
+          if (diffInDays >= 15) {
+            userDiscount = 10; // Đã 15 ngày không mua
+          }
+        }
+      }
+    }
+
+    // ==========================================
+    // 🚀 2. LOGIC TÌM 10 SẢN PHẨM Ế NHẤT TỪ DB
+    // ==========================================
+    let productDiscount = 0;
+
+    // Truy vấn 10 sản phẩm có số lượng 'sold' thấp nhất
+    const bottom10Products = await Product.find()
+      .sort({ sold: 1 }) 
+      .limit(10)         
+      .select('_id createdAt'); 
+
+    // Lấy danh sách ID của 10 đứa này
+    const bottom10Ids = bottom10Products.map(p => p._id.toString());
+
+    // Kiểm tra xem sản phẩm khách đang thêm vào giỏ có nằm trong danh sách "Đội sổ" không?
+    const isBottom10 = bottom10Ids.includes(product._id.toString());
+
+    if (isBottom10) {
+      // Tính tuổi đời từ lúc tạo ra sản phẩm (createdAt)
+      const productAgeDays = (Date.now() - new Date(product.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+
+      if (productAgeDays >= 20) {
+        productDiscount = 50; // Tạo > 20 ngày mà lọt top ế -> 50%
+      } else if (productAgeDays >= 10) {
+        productDiscount = 30; // Tạo > 10 ngày mà lọt top ế -> 30%
+      }
+    }
+
+    // ==========================================
+    // 🚀 3. CHỐT DEAL: GỘP ƯU ĐÃI & TÍNH TIỀN
+    // ==========================================
+    const finalDiscountPercent = Math.max(userDiscount, productDiscount);
+    const finalPrice = basePrice - (basePrice * finalDiscountPercent / 100);
+
+    // ==========================================
+    // 🚀 4. LƯU VÀO GIỎ HÀNG 
+    // ==========================================
     let cart = await getCart(userId, guestId);
 
     if (cart) {
-     
-      const productIndex = cart.products.findIndex((p) => 
-        p.productId.toString() === productId &&
-        p.size === size &&
-        p.color === color
+      const productIndex = cart.products.findIndex(
+        (p) =>
+          p.productId.toString() === productId &&
+          p.size === size &&
+          p.color === color,
       );
-  
 
       if (productIndex > -1) {
-       
         cart.products[productIndex].quantity += qty;
+        cart.products[productIndex].price = finalPrice; // Cập nhật lại giá sale mới nhất
       } else {
-
         cart.products.push({
           productId,
           name: product.name,
-          image: product.images[0].url, 
-          price: product.price,
+          image: product.images[0].url,
+          price: finalPrice,
           size,
           color,
-          quantity:qty,
+          quantity: qty,
         });
       }
 
+      // Tính lại tổng tiền của cả giỏ
       cart.totalPrice = cart.products.reduce(
         (acc, item) => acc + item.price * item.quantity,
-        0
+        0,
       );
 
       await cart.save();
       return res.status(200).json(cart);
-      
     } else {
-
       const newCart = await Cart.create({
-        user: userId ? userId : undefined, 
+        user: userId ? userId : undefined,
         guestId: guestId ? guestId : "guest_" + new Date().getTime(),
         products: [
           {
             productId,
             name: product.name,
             image: product.images[0].url,
-            price: product.price,
+            price: finalPrice,
             size,
             color,
-            quantity:qty,
+            quantity: qty,
           },
         ],
-        totalPrice: product.price * qty,
+        totalPrice: finalPrice * qty,
       });
       return res.status(201).json(newCart);
     }
@@ -84,9 +151,8 @@ router.post("/", async (req, res) => {
     res.status(500).send("Server error");
   }
 });
-
-// route Put / api/ cart 
-// update product 
+// route Put / api/ cart
+// update product
 // PUT /api/cart
 // Update product quantity in cart
 router.put("/", async (req, res) => {
@@ -101,7 +167,7 @@ router.put("/", async (req, res) => {
       (p) =>
         p.productId.toString() === productId &&
         p.size === size &&
-        p.color === color // Biến color giờ đã có giá trị
+        p.color === color, // Biến color giờ đã có giá trị
     );
 
     // SỬA 2: Đưa logic save và return vào trong block if
@@ -114,7 +180,7 @@ router.put("/", async (req, res) => {
 
       cart.totalPrice = cart.products.reduce(
         (acc, item) => acc + item.price * item.quantity,
-        0
+        0,
       );
 
       await cart.save();
@@ -128,47 +194,48 @@ router.put("/", async (req, res) => {
   }
 });
 
-// route Delete / api / cart 
-// remove Product 
-router.delete("/", async (req, res)=> {
-    const {productId , size , color , guestId , userId} = req.body 
-    try{ 
-        let cart = await getCart(userId , guestId)
-        if(!cart) return res.status(404).json({message : "cart not found "})
-            const productIndex = cart.products.findIndex(
-        (p)=> 
-            p.productId.toString() === productId
-         && p.size === size 
-         && p.color === color )
+// route Delete / api / cart
+// remove Product
+router.delete("/", async (req, res) => {
+  const { productId, size, color, guestId, userId } = req.body;
+  try {
+    let cart = await getCart(userId, guestId);
+    if (!cart) return res.status(404).json({ message: "cart not found " });
+    const productIndex = cart.products.findIndex(
+      (p) =>
+        p.productId.toString() === productId &&
+        p.size === size &&
+        p.color === color,
+    );
 
-      if (productIndex > -1) {
+    if (productIndex > -1) {
       cart.products.splice(productIndex, 1);
-      
+
       cart.totalPrice = cart.products.reduce(
         (acc, item) => acc + item.price * item.quantity,
-        0
+        0,
       );
-      
+
       await cart.save();
       return res.status(200).json(cart);
     } else {
       return res.status(404).json({ message: "Product not found in cart" });
     }
-    
-  } catch (err) { 
+  } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error" });
   }
 });
 
-// route Delete / api / cart 
-// remove cart 
+// route Delete / api / cart
+// remove cart
 
 router.delete("/clear", async (req, res) => {
   const { guestId, userId } = req.body;
   try {
     let cart = await getCart(userId, guestId);
-    if (!cart) return res.status(404).json({ message: "Không tìm thấy giỏ hàng" });
+    if (!cart)
+      return res.status(404).json({ message: "Không tìm thấy giỏ hàng" });
 
     // Xóa sạch mảng products và reset tổng tiền
     cart.products = [];
@@ -180,34 +247,27 @@ router.delete("/clear", async (req, res) => {
     console.error(err);
     return res.status(500).json({ message: "Server error" });
   }
-}); 
+});
 
+// Get / api / cart
+// get logged  user or guest user
+router.get("/", async (req, res) => {
+  const { userId, guestId } = req.query;
 
-
-
-
-// Get / api / cart 
-// get logged  user or guest user 
-router.get("/", async (req, res)=>{
-    const {userId, guestId} = req.query
-
-    try {
-        const cart = await getCart(userId , guestId)
-        if(cart){
-            res.json(cart)
-        }else {
-            res.status(404).json({message: "cart not found "})
-
-        }
-    }catch (err){
-        console.error(err)
-        res.status(500).json({message : "server error "})
+  try {
+    const cart = await getCart(userId, guestId);
+    if (cart) {
+      res.json(cart);
+    } else {
+      res.status(404).json({ message: "cart not found " });
     }
-})
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "server error " });
+  }
+});
 
-
-
-// Post / api / cart/ merge 
+// Post / api / cart/ merge
 // Route Merge Cart (Gộp giỏ hàng Guest vào User)
 router.post("/merge", protect, async (req, res) => {
   const { guestId } = req.body;
@@ -230,7 +290,7 @@ router.post("/merge", protect, async (req, res) => {
             (item) =>
               item.productId.toString() === guestItem.productId.toString() &&
               item.size === guestItem.size &&
-              item.color === guestItem.color
+              item.color === guestItem.color,
           );
 
           if (productIndex > -1) {
@@ -245,7 +305,7 @@ router.post("/merge", protect, async (req, res) => {
         // Tính lại tổng tiền
         userCart.totalPrice = userCart.products.reduce(
           (acc, item) => acc + item.price * item.quantity,
-          0
+          0,
         );
 
         await userCart.save();
@@ -258,11 +318,10 @@ router.post("/merge", protect, async (req, res) => {
         }
 
         return res.status(200).json(userCart);
-
       } else {
         guestCart.user = req.user._id;
         guestCart.guestId = undefined;
-        await guestCart.save(); 
+        await guestCart.save();
         return res.status(200).json(guestCart);
       }
     } else {
@@ -274,9 +333,8 @@ router.post("/merge", protect, async (req, res) => {
     }
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" }); 
+    res.status(500).json({ message: "Server error" });
   }
 });
-
 
 module.exports = router;

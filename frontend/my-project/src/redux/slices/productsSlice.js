@@ -17,7 +17,7 @@ export const fetchProductsbyFilter = createAsyncThunk(
     material,
     brand,
     limit,
-  }) => {
+  } = {}) => {
     const query = new URLSearchParams();
     if (collection) query.append("collection", collection);
     if (size) query.append("size", size);
@@ -75,14 +75,75 @@ export const fetchSimilarProducts = createAsyncThunk(
   },
 );
 
+// fetch product recommend 
+
+export const fetchRecommendedProducts = createAsyncThunk(
+  "products/fetchRecommended",
+  async (bodyType, { rejectWithValue }) => {
+    try {
+     
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/products/recommend?bodyType=${bodyType}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Lỗi lấy đồ gợi ý");
+    }
+  }
+);
+
+
+// Thunk mới: Phân tích ảnh bằng AI Gemini
+export const analyzeBodyWithAI = createAsyncThunk(
+  "products/analyzeBodyWithAI",
+  async (imageBase64, { dispatch, rejectWithValue }) => {
+    try {
+      // 1. Gọi API AI ở Backend
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/ai-recommend/analyze-body`,
+        { image: imageBase64 }
+      );
+
+
+      return response.data; // Trả về để Component hiển thị chữ "Slim/Fit/Plus-size"
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "AI không thể phân tích ảnh"
+      );
+    }
+  }
+);
+
+// Thunk mới: Gọi chuyên gia tư vấn AI (Bằng số đo)
+export const fetchAIConsultant = createAsyncThunk(
+  "products/fetchAIConsultant",
+  async ({ height, weight , gender, age, purpose }, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/ai-recommend/consultant`,
+        { height, weight, gender, age, purpose }
+      );
+      
+      // Backend trả về: { bmi, advice, products }
+      return response.data; 
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Lỗi AI Consultant"
+      );
+    }
+  }
+);
+
+
+
 const productSlice = createSlice({
   name: "products",
   initialState: {
     products: [],
     selectedProduct: null,
     similarProducts: [],
+    recommendedProducts: [],
     loading: false,
     error: null,
+    aiLoading: false,
     filters: {
       category: "",
       size: "",
@@ -168,8 +229,69 @@ const productSlice = createSlice({
       })
       .addCase(fetchSimilarProducts.rejected, (state, action) => {
         ((state.loading = false), (state.error = action.error.message));
-      });
+      })
+      .addCase(fetchRecommendedProducts.pending , (state)=>{
+        state.loading = true ,
+        state.error = null
+      })
+      .addCase(fetchRecommendedProducts.fulfilled, (state, action)=>{
+        state.loading = false,
+        state.recommendedProducts = action.payload
+      })
+      .addCase(fetchRecommendedProducts.rejected , (state, action)=>{
+        state.loading = false,
+        state.error = action.payload
+
+      })
+      .addCase(analyzeBodyWithAI.pending, (state) => {
+  state.aiLoading = true;
+  state.error = null;
+  state.aiAdvice = null; // Clear lời khuyên cũ đi
+  state.bodyType = null;
+})
+.addCase(analyzeBodyWithAI.fulfilled, (state, action) => {
+  state.aiLoading = false;
+  // Lưu kết quả bodyType vào state nếu muốn dùng ở nhiều nơi
+state.bodyType = action.payload.bodyType;
+  state.aiAdvice = action.payload.advice; 
+  state.recommendedProducts = action.payload.products;
+})
+.addCase(analyzeBodyWithAI.rejected, (state, action) => {
+  state.aiLoading = false;
+  state.error = action.payload;
+})
+.addCase(fetchAIConsultant.pending, (state) => {
+  state.consultantLoading = true;
+  state.error = null;
+  state.aiAdvice = null;
+})
+.addCase(fetchAIConsultant.fulfilled, (state, action) => {
+  state.consultantLoading = false;
+  
+  // Lấy lời khuyên gán vào state
+  state.aiAdvice = action.payload.advice; 
+  
+  // Đỉnh cao ở đây: Cập nhật luôn danh sách đồ AI chọn vào Redux
+  state.recommendedProducts = action.payload.products; 
+
+  // Nếu fen muốn hiển thị chữ Slim/Fit/Plus-size:
+  const bmi = action.payload.bmi;
+  if (bmi < 18.5) state.bodyType = "Slim";
+  else if (bmi >= 25) state.bodyType = "Plus-size";
+  else state.bodyType = "Fit";
+})
+.addCase(fetchAIConsultant.rejected, (state, action) => {
+  state.consultantLoading = false;
+  state.error = action.payload;
+})
+      
   },
 });
+
+
+
+
+
+
 export const { setFilters, clearFilters } = productSlice.actions;
 export default productSlice.reducer;

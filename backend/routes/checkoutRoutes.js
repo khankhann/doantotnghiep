@@ -6,34 +6,107 @@ const Product = require("../models/Product");
 const Order = require("../models/Order");
 const { protect } = require("../middleware/authMiddleware");
 const router = express.Router();
-// POST / api / checkout
 
-
+// POST /api/checkout
 router.post("/", protect, async (req, res) => {
-  const { checkoutItem, shippingAddress, paymentMethod, totalPrice } = req.body;
+  const { checkoutItem, shippingAddress, paymentMethod } = req.body;
 
-  if (  !checkoutItem || checkoutItem.length === 0) {
+  if (!checkoutItem || checkoutItem.length === 0) {
     return res.status(400).json({ message: "no items in checkout" });
   }
   try {
-    const mergedItems = []
-    checkoutItem.forEach((item)=> {
+    const mergedItems = [];
+    checkoutItem.forEach((item) => {
       const existingItem = mergedItems.find(
         (i) => i.product === item.product && i.size === item.size && i.color === item.color
-      )
-      if(existingItem){
-        existingItem.quantity += item.quantity
-      }else{
-        mergedItems.push(item)
+      );
+
+      if (existingItem) {
+        existingItem.quantity += item.quantity;
+      } else {
+        mergedItems.push(item);
       }
-    })
+    });
+
+    // ==========================================
+    // 🚀 1. LOGIC CHECK KHÁCH HÀNG (TẶNG 10% KHÁCH MỚI/LẶN 15 NGÀY)
+    // ==========================================
+    let userDiscount = 0; 
+
+    const lastCreatedOrder = await Order.findOne({ user: req.user._id }).sort({ createdAt: -1 });
+    const lastPaidOrder = await Order.findOne({ 
+      user: req.user._id,
+      isPaid: true 
+    }).sort({ paidAt: -1 });
+
+    if (!lastCreatedOrder && !lastPaidOrder) {
+      userDiscount = 10; 
+    } else {
+      let latestActivityTime = 0;
+      const createdTime = lastCreatedOrder ? new Date(lastCreatedOrder.createdAt).getTime() : 0;
+      const paidTime = lastPaidOrder ? new Date(lastPaidOrder.paidAt).getTime() : 0;
+      
+      latestActivityTime = Math.max(createdTime, paidTime);
+
+      if (latestActivityTime > 0) {
+        const diffInDays = (Date.now() - latestActivityTime) / (1000 * 60 * 60 * 24);
+        if (diffInDays >= 15) {
+          userDiscount = 10; 
+        }
+      }
+    }
+
+    // ==========================================
+    // 🚀 2. TÌM 10 SẢN PHẨM Ế NHẤT TỪ DATABASE 
+    // ==========================================
+    const bottom10ProductsDB = await Product.find()
+      .sort({ sold: 1, _id: 1 }) // <--- FIX: Đã thêm _id: 1 để đồng bộ 100% với Frontend
+      .limit(10)         
+      .select('_id createdAt'); 
+    
+    const bottom10Ids = bottom10ProductsDB.map(p => p._id.toString());
+
+    // ==========================================
+    // 🚀 3. TÍNH TIỀN CHO TỪNG SẢN PHẨM TRONG GIỎ
+    // ==========================================
+    let calculatedTotalPrice = 0; 
+    
+    for(let item of mergedItems){
+      const realProduct = await Product.findById(item.product || item.productId); 
+      if(!realProduct){
+        return res.status(404).json({message: "product not exist"});
+      }
+
+      let productDiscount = 0;
+      const isBottom10 = bottom10Ids.includes(realProduct._id.toString());
+      const productAgeDays = (Date.now() - new Date(realProduct.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+
+      if (isBottom10) {
+        if (productAgeDays >= 20) {
+          productDiscount = 50; 
+        } else if (productAgeDays >= 10) {
+          productDiscount = 30; 
+        }
+      }
+
+      // 🚀 CHỐT DEAL
+      const finalDiscountPercent = Math.max(userDiscount, productDiscount);
+
+      const finalPrice = realProduct.price - (realProduct.price * finalDiscountPercent / 100);
+      const safeQuantity = Number(item.quantity || 1);
+     
+      item.price = finalPrice;
+      item.product = realProduct._id; 
+      
+      calculatedTotalPrice += (finalPrice * safeQuantity); 
+    }
 
     const newCheckout = await Checkout.create({
       user: req.user._id,
       checkoutItem: mergedItems,
       shippingAddress,
       paymentMethod,
-      totalPrice,
+      totalPrice: calculatedTotalPrice,
       paymentStatus: "Pending",
       isPaid: false,
     });
@@ -45,22 +118,22 @@ router.post("/", protect, async (req, res) => {
   }
 });
 
-// GET / api / chechout / :id
+// GET /api/checkout/:id
 router.get('/:id', protect, async(req, res)=>{
   try {
-const checkout = await Checkout.findById(req.params.id)
-if(checkout){
-  res.status(200).json(checkout)
-}else{
-  res.status(404).json({message : "khong tim thay "})
-}
+    const checkout = await Checkout.findById(req.params.id)
+    if(checkout){
+      res.status(200).json(checkout)
+    }else{
+      res.status(404).json({message : "khong tim thay "})
+    }
   }catch(error){
-console.error(error)
-res.status(500).json({message : "Server error"})
+    console.error(error)
+    res.status(500).json({message : "Server error"})
   }
 })
 
-// PUT / api / checkout / :id/pay
+// PUT /api/checkout/:id/pay
 router.put("/:id/pay", protect, async (req, res) => {
   const { paymentStatus, paymentDetails } = req.body;
 
@@ -91,8 +164,7 @@ router.put("/:id/pay", protect, async (req, res) => {
   }
 });
 
-// post / api / checkout /:id/ finalize
-
+// POST /api/checkout/:id/finalize
 router.post("/:id/finalize", protect, async (req, res) => {
   try {
     const checkout = await Checkout.findById(req.params.id);
@@ -103,16 +175,12 @@ router.post("/:id/finalize", protect, async (req, res) => {
         return res.status(401).json({ message: "Not authorized" });
     }
 
-    // --- 2. LỚP BẢO VỆ CHỐNG TRÙNG ĐƠN (Race Condition) ---
-    // Trước khi tạo, kiểm tra xem đã có Order nào tạo từ Checkout này chưa
-    // (Dùng paidAt làm key, hoặc tốt hơn là thêm trường checkoutId vào Order schema nếu có)
     const existingOrder = await Order.findOne({ 
         user: checkout.user, 
         paidAt: checkout.paidAt 
     });
 
     if (existingOrder) {
-        // Nếu tìm thấy đơn hàng đã tồn tại -> Update checkout cho khớp rồi trả về luôn
         if (!checkout.isFinalized) {
             checkout.isFinalized = true;
             checkout.finalizedAt = Date.now();
@@ -120,8 +188,7 @@ router.post("/:id/finalize", protect, async (req, res) => {
         }
         return res.status(200).json(existingOrder);
     }
-    // -----------------------------------------------------
-
+   
     if (checkout.isPaid && !checkout.isFinalized) {
       const finalOrder = await Order.create({
         user: checkout.user,
@@ -136,6 +203,22 @@ router.post("/:id/finalize", protect, async (req, res) => {
         paymentDetails: checkout.paymentDetails,
       });
 
+      // 🚀 CẬP NHẬT TỒN KHO VÀ LƯỢT BÁN (Đã Fix lỗi logic)
+     for(const item of checkout.checkoutItem){
+        const productId = item.product || item.productId;
+        
+        // Dùng findByIdAndUpdate để update trực tiếp, không bị dính lỗi thiếu "lastEditByUser"
+        await Product.findByIdAndUpdate(
+          productId,
+          {
+            $inc: { 
+              countInStock: -item.quantity, // Trừ đi số lượng khách mua
+              sold: item.quantity           // Cộng thêm lượt bán
+            }
+          }
+        );
+      }
+
       checkout.isFinalized = true;
       checkout.finalizedAt = Date.now();
       await checkout.save();
@@ -145,8 +228,6 @@ router.post("/:id/finalize", protect, async (req, res) => {
       res.status(201).json(finalOrder);
 
     } else if (checkout.isFinalized) {
-        // Trường hợp checkout đã đánh dấu finalized (logic cũ của bạn)
-        // Code bên trên (existingOrder) đã cover phần này rồi, nhưng giữ lại làm backup cũng được
         const oldOrder = await Order.findOne({ 
             user: checkout.user, 
             paidAt: checkout.paidAt 
@@ -165,4 +246,5 @@ router.post("/:id/finalize", protect, async (req, res) => {
     res.status(500).json({ message: "server error " });
   }
 });
+
 module.exports = router;

@@ -6,3 +6,24 @@
   font-optical-sizing: auto;
   font-style: normal;
 }
+
+
+
+
+@layer utilities {
+  .animate-slide-down {
+    animation: slideDown 0.5s ease-out forwards;
+    transform-origin: top right; /* Điểm gốc từ góc trên bên phải (chỗ cái chuông) */
+  }
+}
+
+@keyframes slideDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(1); /* Bắt đầu: Mờ, lệch lên trên, nhỏ hơn xíu */
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1); /* Kết thúc: Rõ, về vị trí cũ, kích thước chuẩn */
+  }
+}

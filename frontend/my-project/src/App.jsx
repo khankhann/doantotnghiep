@@ -9,6 +9,7 @@ import CheckOut from "@components/Cart/CheckOut/CheckOut.jsx";
 import OrderConfirmation from "@pages/OrderConfirmation/OrderConfirmation";
 import OrderDetailPage from "@pages/OrderDetailPage/OrderDetailPage";
 import MyOrderPage from "@pages/MyOrderPage/MyOrderPage";
+import VisualStylelist from "@pages/VisualStyleList/VisualStyleList";
 import AdminHomePage from "@components/Admin/AdminHomePage/AdminHomePage";
 import UserManagement from "@components/Admin/UserManagement/UserManagement";
 import AdminLayout from "@components/Admin/AdminLayout";
@@ -23,6 +24,8 @@ import { useEffect } from "react";
 import { fetchCart } from '@redux/slices/cartSlice';
 import ProtectedRoute from "@components/Common/ProtectedRoute/ProtectedRoute";
 import CreateProductPage from "@components/Admin/CreateProductPage/CreateProductPage";
+import TopLoadingBar from "@components/TopLoadingBar/TopLoadingBar";
+import NotificationUser from "./pages/NotificationUser/NotificationUser";
 function App() {
   const dispatch = useDispatch()
   const {user} = useSelector((state) => state.auth)
@@ -37,6 +40,7 @@ function App() {
     
       <BrowserRouter
         future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <TopLoadingBar />
         <Toaster position="top-right" />
         <Routes>
           <Route path="/" element={<UserLayout />}>
@@ -49,11 +53,13 @@ function App() {
               path="collections/:collection"
               element={<CollectionPage />}
             />
+            <Route path="/product-recommend" element={<VisualStylelist /> } />
             <Route path="product/:id" element={<ProductBestSeller />} />
             <Route path="checkout" element={<CheckOut />} />
             <Route path="order-confirmation" element={<OrderConfirmation />} />
             <Route path="order/:id" element={<OrderDetailPage />} />
             <Route path="/my-orders" element={<MyOrderPage />} />
+            <Route path="/notifications" element={ <NotificationUser />} />
           </Route>
           <Route path="/admin" element={ <ProtectedRoute role="admin"> <AdminLayout /> </ProtectedRoute>}>
             <Route index element={<AdminHomePage />} />

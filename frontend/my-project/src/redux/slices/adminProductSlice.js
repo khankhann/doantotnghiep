@@ -4,8 +4,12 @@ import axios from "axios";
 // async thunk to fetch admin product
 export const fetchAdminProducts = createAsyncThunk(
   "adminProducts/fetchAdminProducts",
-  async () => {
+  async ({search = ""} = {}) => {
     const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/products`, {
+      params : {
+        search : search
+      },
+      
       headers: {
         Authorization: `Bearer ${localStorage.getItem("userToken")}`,
       },

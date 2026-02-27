@@ -5,7 +5,7 @@ const productSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      trim: true, 
+      trim: true,
     },
     description: {
       type: String,
@@ -18,6 +18,10 @@ const productSchema = new mongoose.Schema(
     discountPrice: {
       type: Number,
     },
+    sold: {
+      type: Number,
+      default: 0,
+    },
     countInStock: {
       type: Number,
       required: true,
@@ -25,7 +29,7 @@ const productSchema = new mongoose.Schema(
     },
     sku: {
       type: String,
-      unique: true, 
+      unique: true,
       required: true,
     },
     category: {
@@ -33,16 +37,14 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
     brand: {
-
       type: String,
       required: true,
     },
     sizes: {
       type: [String],
-      required: true, 
+      required: true,
     },
     colors: {
-
       type: [String],
       required: true,
     },
@@ -56,6 +58,10 @@ const productSchema = new mongoose.Schema(
     gender: {
       type: String,
       enum: ["Men", "Women", "Unisex"],
+    },
+    suitableForBodyType: {
+      type: [String], // Ví dụ: ["Slim", "Fit", "Plus-size"]
+      default: ["Fit"],
     },
     images: [
       {
@@ -88,7 +94,12 @@ const productSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true, 
+      required: true,
+    },
+    lastEditByUser: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     metaTitle: {
       type: String,
@@ -102,12 +113,11 @@ const productSchema = new mongoose.Schema(
     dimensions: {
       length: Number,
       width: Number,
-      height: Number, 
+      height: Number,
     },
     weight: Number,
-
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Product", productSchema);

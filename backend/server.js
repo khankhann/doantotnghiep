@@ -94,7 +94,7 @@ server.listen(PORT, () => {
   console.log(`server is running on http://localhost:${PORT}`);
 });
 
-// app.use(cors({
-//   origin: ["https://doantotnghiep-mu.vercel.app"], 
-//   credentials: true
-// }));
+app.use(cors({
+  origin: ["https://doantotnghiep-mu.vercel.app"], 
+  credentials: true
+}));

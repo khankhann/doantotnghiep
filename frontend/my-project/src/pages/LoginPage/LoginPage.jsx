@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { loginUser } from "@redux/slices/authSlice";
 import {useDispatch, useSelector} from "react-redux";
 import { mergeCart } from '@redux/slices/cartSlice';
+import { toast } from "sonner";
 import PageTransition2 from "../../components/PageTransition/PageTransition2";
 
 function LoginPage() {
@@ -32,8 +33,23 @@ useEffect(()=> {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 const handleSubmit = (e)=>{
+
     e.preventDefault()
+    if (!email || !password) {
+      return toast.error("Vui lòng nhập đầy đủ email và mật khẩu");
+    }
     dispatch(loginUser({email, password}))
+    .unwrap()
+    .then((res) => {
+        toast.success(`Chào mừng trở lại!`);
+      })
+      .catch((err) => {
+        // err thường là cái rejectWithValue từ slice của fen
+        toast.error( "Đăng nhập thất bại. Kiểm tra lại thông tin nhé!");
+      });
+    
+  
+
 }
   return (
     <PageTransition2>

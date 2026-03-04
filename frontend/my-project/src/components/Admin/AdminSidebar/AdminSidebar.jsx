@@ -19,11 +19,11 @@ function AdminSidebar() {
   const { user } = useSelector((state) => state.auth);
 
   const handleLogout = () => {
-    if (window.confirm("Bạn có chắc muốn đăng xuất?")) {
+   
       dispatch(logout());
       dispatch(clearCart());
       navigate("/");
-    }
+    
   };
 
   // 👇 Gom gọn menu vào 1 mảng để code không bị lặp đi lặp lại (Chuẩn DRY)

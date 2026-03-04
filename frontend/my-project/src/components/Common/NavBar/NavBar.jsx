@@ -173,7 +173,7 @@ function Navbar() {
       {/* ==========================================
           👇 3. BẢN THỂ 1: NAVBAR TĨNH (LUÔN Ở ĐÓ GIỮ CHỖ)
       ========================================== */}
-      <header className="w-full relative bg-white z-30">
+      <header className="w-full  bg-white/50  border-b border-white/40 z-30">
         {navContent}
       </header>
 

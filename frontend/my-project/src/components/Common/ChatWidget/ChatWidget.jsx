@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BsChatDotsFill } from "react-icons/bs";
 import { IoCloseOutline, IoArrowBackOutline, IoSend } from "react-icons/io5";
@@ -35,7 +35,7 @@ function ChatWidget() {
 
   const currentMessages = chatMode === "ai" ? aiMessages : adminMessages;
 
-  // 1. Kết nối Socket
+  // 1. Kết nối Socket & Tham gia phòng (Room)
   useEffect(() => {
     if (!user?._id || !socket) return;
     const joinRooms = () => {
@@ -49,7 +49,7 @@ function ChatWidget() {
     return () => socket.off("connect", joinRooms);
   }, [user]);
 
-  // 2. Cuộn xuống & Đếm tin chưa đọc
+  // 2. Tự động cuộn xuống & Đếm tin nhắn chưa đọc
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     const lastMsg = adminMessages[adminMessages.length - 1];
@@ -59,7 +59,7 @@ function ChatWidget() {
     }
   }, [adminMessages, isOpen, user, isAITyping]);
 
-  // 3. Nhận tin nhắn & Lọc trùng
+  // 3. Xử lý nhận tin nhắn & Lọc ID an toàn
   useEffect(() => {
     const handleMsg = (newMsg) => {
       const msgAdminId = newMsg.adminId && typeof newMsg.adminId === 'object' ? newMsg.adminId._id : newMsg.adminId;
@@ -68,7 +68,7 @@ function ChatWidget() {
       let isFromMe = false;
 
       if (user?.role === "admin") {
-        // 🔥 Lọc: Nếu ID khớp HOẶC Nội dung trùng với câu vừa gõ
+        // 🔥 Lọc: Trùng ID Admin HOẶC Trùng nội dung vừa gõ
         isFromMe = (msgAdminId && String(msgAdminId) === String(user?._id)) || 
                    (newMsg.sender === "admin" && newMsg.text === lastSentTextRef.current);
       } else {
@@ -78,7 +78,7 @@ function ChatWidget() {
       if (!isFromMe) {
         dispatch(addAdminMessage(newMsg));
       } else {
-        lastSentTextRef.current = ""; 
+        lastSentTextRef.current = ""; // Reset Ref sau khi chặn thành công
       }
     };
 
@@ -129,12 +129,13 @@ function ChatWidget() {
     fetchHistoryWithLoading(target._id);
   };
 
+  // 4. Gửi tin nhắn & Hiện thị tức thì (Optimistic UI)
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!inputText.trim()) return;
 
     const currentText = inputText;
-    lastSentTextRef.current = currentText; // 🔥 Nhớ tin nhắn vừa gõ
+    lastSentTextRef.current = currentText; // 🔥 Ghi nhớ để chặn trùng lặp
     setInputText(""); 
     
     const tempId = Date.now().toString(); 
@@ -179,7 +180,6 @@ function ChatWidget() {
     return String(idData);
   };
 
-  // 🔥 NÚT BACK CỰC NHANH: Bấm phát về luôn không hỏi han
   const handleBackDirectly = () => {
     setChatMode("select");
     setSelectedAdmin(null);
@@ -211,7 +211,6 @@ function ChatWidget() {
             
             <div className="bg-gray-900 p-4 text-white flex items-center justify-between shadow-sm z-10">
               <div className="flex items-center gap-2">
-                {/* 🔥 NÚT BACK ĐÃ ĐỔI SANG handleBackDirectly */}
                 {chatMode !== "select" && <IoArrowBackOutline className="cursor-pointer hover:bg-white/20 p-1 rounded-full transition-colors" size={26} onClick={handleBackDirectly} />}
                 <h3 className="font-bold text-base tracking-wide flex items-center gap-2">{headerTitle}</h3>
               </div>
@@ -244,31 +243,45 @@ function ChatWidget() {
                         {currentMessages
                           ?.filter(msg => {
                             if (chatMode === "ai") return true;
-                            if (user?.role === "admin") {
-                              const partnerId = String(chatMode === "admin" ? selectedAdmin?._id : selectedUserToChat?._id);
-                              const msgUserId = getSafeId(msg.user);
-                              const msgAdminId = getSafeId(msg.adminId);
-                              if (msgUserId === partnerId || msgAdminId === partnerId) return true;
-                              if (!msgAdminId && msgUserId === String(user?._id)) return true;
-                              return false; 
-                            }
-                            return true;
+                            const partnerId = String(chatMode === "admin" ? (selectedAdmin?._id || "general") : selectedUserToChat?._id);
+                            const msgUserId = getSafeId(msg.user);
+                            const msgAdminId = getSafeId(msg.adminId);
+                            if (msgUserId === partnerId || msgAdminId === partnerId) return true;
+                            if (!msgAdminId && msgUserId === String(user?._id)) return true;
+                            return false; 
                           })
                           .map((msg, index) => {
-                            let isMe = (chatMode === "ai") ? (msg.sender === "customer") : (user?.role === "admin" ? (msg.sender !== "customer" && (getSafeId(msg.adminId) === String(user?._id) || getSafeId(msg.user) !== String(user?._id))) : (msg.sender === "customer"));
+                            // Phân định bong bóng Trái/Phải
+                            let isMe = false;
+                            const msgAdminId = getSafeId(msg.adminId);
+                            const msgUserId = getSafeId(msg.user);
+
+                            if (chatMode === "ai") {
+                              isMe = msg.sender === "customer";
+                            } else if (user?.role === "admin") {
+                              if (msg.sender === "customer") isMe = false; 
+                              else isMe = msgAdminId ? msgAdminId === String(user?._id) : msgUserId !== String(user?._id);
+                            } else {
+                              isMe = msg.sender === "customer"; 
+                            }
+
                             return (
-                              <motion.div key={msg._id || `msg-${index}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                                <div className={`px-4 py-2 text-[13px] rounded-[20px] shadow-sm ${isMe ? "bg-gray-900 text-white rounded-br-none" : "bg-white text-gray-800 border rounded-bl-none"}`}>{msg.text}</div>
-                                <span className="text-[10px] text-gray-400 mt-1">{moment(msg.createdAt).format("HH:mm")}</span>
+                              <motion.div key={msg._id || `msg-${index}`} initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.2 }} className={`flex flex-col mb-1 ${isMe ? "items-end" : "items-start"}`}>
+                                <div className={`max-w-[80%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+                                  <div className={`px-4 py-2.5 text-[13px] shadow-sm transition-all duration-300 ${isMe ? "bg-gray-900 text-white rounded-[20px] rounded-br-none" : "bg-white text-gray-800 border border-gray-100 rounded-[20px] rounded-bl-none"}`}>
+                                    {msg.text}
+                                  </div>
+                                  <span className="text-[10px] text-gray-400 mt-1 px-1">{moment(msg.createdAt).format("HH:mm")}</span>
+                                </div>
                               </motion.div>
                             )
                           })}
                       </AnimatePresence>
                       <div ref={messagesEndRef} />
                     </div>
-                    <form onSubmit={handleSendMessage} className="p-3 bg-white border-t flex gap-2">
-                      <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder={placeholderText} className="flex-1 bg-gray-100 rounded-full px-4 py-2 outline-none" />
-                      <button type="submit" disabled={!inputText.trim()} className="text-gray-900 p-2 hover:scale-110 transition-all"><IoSend size={22} /></button>
+                    <form onSubmit={handleSendMessage} className="p-3 bg-white border-t flex gap-2 items-center">
+                      <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder={placeholderText} className="flex-1 bg-gray-100 border-none rounded-full px-4 py-2.5 text-[13px] outline-none focus:ring-1 focus:ring-gray-900 transition-all" />
+                      <button type="submit" disabled={!inputText.trim() || (chatMode === "ai" && isAITyping)} className="text-gray-900 p-2 hover:scale-110 disabled:opacity-50 transition-all"><IoSend size={22} /></button>
                     </form>
                   </motion.div>
                 )}

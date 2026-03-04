@@ -16,7 +16,7 @@ function ProductsGrid({ products, loading, error }) {
         return (
           // Thêm class "group" vào Link để bắt sự kiện hover cho các phần tử con
           <Link key={product._id} to={`/product/${product._id}`} className="block group">
-            <div className="bg-white p-4 rounded-lg">
+            <div className="bg-white p-4 rounded-lg z-[30]">
               
               {/* Vùng chứa ảnh: Thêm relative để xếp ảnh đè lên nhau */}
               <div className="relative w-full h-96 mb-4 overflow-hidden rounded-lg">

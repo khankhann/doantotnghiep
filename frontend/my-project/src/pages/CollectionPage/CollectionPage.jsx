@@ -15,7 +15,7 @@ function CollectionPage() {
   const [isSideBarOpen, setIsSideBarOpen] = useState(false);
   const sideBarRef = useRef(null);
 
-console.log(products)
+
   
   const toggleSideBar = () => {
     setIsSideBarOpen(!isSideBarOpen);
@@ -59,7 +59,7 @@ console.log(products)
         ref={sideBarRef}
         className={`${
           isSideBarOpen ? "translate-x-0" : "-translate-x-full"
-        } fixed inset-y-0  
+        } fixed inset-y-0  z-35
                 left-0 w-64 bg-white overflow-y-auto
                  transition-transform duration-500 lg:static lg:translate-x-0 `}>
         <FilterSideBar />

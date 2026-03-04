@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const  Groq  = require("groq-sdk");
 const express = require("express")
 const Message = require("../models/Chat")
 const User = require("../models/User")
@@ -7,11 +7,13 @@ const Product = require("../models/Product");
 const {protect, admin} = require("../middleware/authMiddleware")
 const router = express.Router()
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+const groq = new Groq({apiKey : process.env.GROQ_API_KEY})
+
+
 router.post("/ai", protect, async (req, res) => {
   try {
     const { message } = req.body;
-    const user = req.user; // Lấy thông tin người dùng từ token (nhờ protect)
+    const user = req.user;
 
     if (!message) {
       return res.status(400).json({ message: "Vui lòng nhập tin nhắn" });
@@ -20,26 +22,20 @@ router.post("/ai", protect, async (req, res) => {
     let systemContext = "";
 
     // ==========================================
-    // 1. NẾU LÀ ADMIN: Kéo data doanh thu, đơn hàng
+    // 1. NẾU LÀ ADMIN: "SIÊU THƯ KÝ" (Giữ nguyên prompt của fen)
     // ==========================================
-   if (user.role === "admin") {
-      // Mốc thời gian bắt đầu ngày hôm nay
+    if (user.role === "admin") {
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
 
-      // 💰 TÍNH NĂNG 1: DOANH THU & ĐƠN HÀNG HÔM NAY
       const todayOrders = await Order.find({ createdAt: { $gte: startOfDay } });
       const todayOrderCount = todayOrders.length;
       const todayRevenue = todayOrders.reduce((sum, order) => sum + (order.totalPrice || 0), 0);
 
-      // 📦 TÍNH NĂNG 2: NHẮC VIỆC (ĐƠN CHƯA XỬ LÝ)
-      // Giả sử schema Order của fen có trường status là 'Pending' hoặc isDelivered = false
       const pendingOrdersCount = await Order.countDocuments({ 
         $or: [{ status: "Pending" }, { isDelivered: false }] 
       });
 
-      // ⚠️ TÍNH NĂNG 3: CẢNH BÁO KHO HÀNG SẮP HẾT
-      // Giả sử schema Product có trường countInStock (số lượng tồn)
       const lowStockProducts = await Product.find({ countInStock: { $lt: 10, $gt: 0 } })
                                             .select('name countInStock')
                                             .limit(5);
@@ -48,14 +44,11 @@ router.post("/ai", protect, async (req, res) => {
         : "Kho hàng ổn định, không có sản phẩm nào sắp hết.";
 
       const outOfStockCount = await Product.countDocuments({ countInStock: 0 });
-
-      // 🏆 TÍNH NĂNG 4: SẢN PHẨM BÁN CHẠY & KHÁCH MỚI
       const bestSellers = await Product.find().sort({ sold: -1 }).limit(3);
       const bestSellerNames = bestSellers.map(p => p.name).join(", ");
-      
       const newUsersCount = await User.countDocuments({ createdAt: { $gte: startOfDay }, role: "customer" });
 
-      // 🧠 BƠM DỮ LIỆU CHO "SIÊU THƯ KÝ"
+      // Prompt Admin của fen đây:
       systemContext = `
         Bạn là "Thư ký Quản trị (Admin Assistant)" cấp cao của Shop thời trang.
         Người đang chat với bạn là Sếp (Admin / Chủ shop).
@@ -78,63 +71,44 @@ router.post("/ai", protect, async (req, res) => {
         2. NHẮC NHỞ CÔNG VIỆC: Nếu có đơn hàng tồn đọng (${pendingOrdersCount} đơn), hãy chủ động nhắc Sếp vào mục Quản lý Đơn hàng để duyệt/giao hàng cho khách.
         3. QUẢN LÝ KHO: Nếu Sếp hỏi "Có món nào cần nhập thêm không?", "Kho bãi sao rồi?" -> Đọc danh sách cảnh báo sắp hết hàng và số món đã hết sạch để Sếp lên kế hoạch nhập kho.
         4. TƯ VẤN CHIẾN LƯỢC: Nếu Sếp hỏi "Làm sao để tăng doanh thu?", hãy khuyên Sếp đẩy mạnh Marketing cho Top 3 sản phẩm gánh doanh thu, và xả kho hoặc làm combo ưu đãi.
-        5. Truy cập internet lấy thông tin xu hướng thời trang, ở đâu , xuát xứ , cập nhật giá cả ví dụ :"200.000 vnd " ,  các ca sĩ nổi tiếng trong thời gian hiện nay tóm tắt 1 cách ngắn gọn đầy đủ 
+        5. Truy cập internet lấy thông tin xu hướng thời trang, ở đâu , xuát xứ , cập nhật giá cả ví dụ :"200.000 vnd " , các ca sĩ nổi tiếng trong thời gian hiện nay tóm tắt 1 cách ngắn gọn đầy đủ 
         6. THÁI ĐỘ: Ngắn gọn, súc tích, chuyên nghiệp. Xưng hô là "Sếp" hoặc "Admin". Báo cáo bằng số liệu thực tế, phong cách giống như một Giám đốc Vận hành (COO) thực thụ.
         7. nhấn mạnh in đậm các từ quan trọng để nắm bắt thông tin 
-      
-      
-      
-        `;
+      `;
     }
     // ==========================================
-    // 2. NẾU LÀ KHÁCH HÀNG: Kéo lịch sử mua, gợi ý
+    // 2. NẾU LÀ KHÁCH HÀNG: "STYLIST" (Giữ nguyên prompt của fen)
     // ==========================================
     else {
-      // 📦 TÍNH NĂNG 1: LẤY LỊCH SỬ MUA & TRẠNG THÁI ĐƠN HÀNG MỚI NHẤT
-      const myOrders = await Order.find({ user: user._id })
-                                  .sort({ createdAt: -1 })
-                                  .limit(5); // Lấy 5 đơn gần nhất để có nhiều data hơn
-
+      const myOrders = await Order.find({ user: user._id }).sort({ createdAt: -1 }).limit(5);
       let orderHistoryText = "Khách chưa từng mua sản phẩm nào.";
       let latestOrderStatus = "Hiện không có đơn hàng nào đang xử lý.";
 
       if (myOrders.length > 0) {
-        // Lấy danh sách tên sản phẩm đã mua
         const boughtItems = [];
         myOrders.forEach(order => {
-          const items = order.orderItems || order.items || [];
-          items.forEach(item => {
-            if (item.name) boughtItems.push(item.name);
-          });
+          const items = order.orderItems || order.orderItems || [];
+          items.forEach(item => { if (item.name) boughtItems.push(item.name); });
         });
-
-        if (boughtItems.length > 0) {
-          orderHistoryText = [...new Set(boughtItems)].join(", ");
-        }
-
-        // Lấy trạng thái của đơn hàng MỚI NHẤT (đơn đầu tiên trong mảng)
+        if (boughtItems.length > 0) orderHistoryText = [...new Set(boughtItems)].join(", ");
+        
         const latestOrder = myOrders[0];
-        // Giả sử DB của fen dùng isDelivered, isPaid hoặc có trường status riêng
         const status = latestOrder.status || (latestOrder.isDelivered ? "Đã giao hàng thành công" : "Đang xử lý/Đang vận chuyển");
         const orderDate = new Date(latestOrder.createdAt).toLocaleDateString('vi-VN');
-        const shortOrderId = latestOrder._id.toString().slice(-6).toUpperCase(); // Cắt 6 số cuối làm mã đơn
-        
+        const shortOrderId = latestOrder._id.toString().slice(-6).toUpperCase();
         latestOrderStatus = `Đơn hàng gần nhất đặt ngày ${orderDate}, mã đơn #${shortOrderId}, trạng thái hiện tại: ${status}.`;
       }
 
-      // 👗 TÍNH NĂNG 2: LẤY SẢN PHẨM HOT ĐỂ LÀM STYLIST PHỐI ĐỒ
       const bestSellers = await Product.find().sort({ sold: -1 }).limit(5);
-      // Ghép tên và giá để báo giá luôn cho khách
       const bestSellerNames = bestSellers.map(p => `${p.name} (${p.price.toLocaleString('vi-VN')}đ)`).join(" | ");
 
-      // 🛡️ TÍNH NĂNG 3 & 4: CHÍNH SÁCH CỬA HÀNG & VOUCHER KHUYẾN MÃI (Gắn cứng hoặc lấy từ DB)
       const storePolicy = `
         - Đổi trả: Hỗ trợ đổi size/mẫu trong 7 ngày (giữ nguyên tem mác).
         - Vận chuyển: Phí ship toàn quốc 30K. Miễn phí ship (Freeship) cho đơn từ 500K trở lên.
         - Mã giảm giá hôm nay: Nhập "GIAM50K" để giảm ngay 50.000đ cho đơn trên 1 triệu.
       `;
 
-      // 🧠 BƠM TOÀN BỘ "SIÊU DỮ LIỆU" VÀO NÃO AI
+      // Prompt Khách hàng của fen đây:
       systemContext = `
         Bạn là "Trợ lý ảo CSKH kiêm Stylist" chuyên nghiệp của Shop thời trang. 
         Khách hàng đang chat tên là: ${user.name}.
@@ -157,22 +131,18 @@ router.post("/ai", protect, async (req, res) => {
     }
 
     // ==========================================
-    // 3. GỌI GEMINI VỚI PROMPT ĐÃ ĐƯỢC BƠM DATA
+    // 3. GỌI GROQ LLAMA 3
     // ==========================================
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    
-    // Nối ngữ cảnh hệ thống với câu hỏi thực tế của người dùng
-    const finalPrompt = `
-      ${systemContext}
-      
-      Câu hỏi của người dùng: "${message}"
-      Trả lời:
-    `;
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        { role: "system", content: systemContext },
+        { role: "user", content: message },
+      ],
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.7,
+    });
 
-    const result = await model.generateContent(finalPrompt);
-    const response = await result.response;
-    const aiText = response.text();
-
+    const aiText = chatCompletion.choices[0]?.message?.content || "AI đang bận, vui lòng thử lại sau!";
     res.status(200).json({ reply: aiText });
 
   } catch (error) {

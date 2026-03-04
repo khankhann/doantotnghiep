@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BsChatDotsFill } from "react-icons/bs";
 import { IoCloseOutline, IoArrowBackOutline, IoSend } from "react-icons/io5";
@@ -13,11 +13,8 @@ import {
   fetchUserList 
 } from "@redux/slices/chatSlice";
 import socket from "@components/socket/Socket";
-import moment from "moment";
-
-
-// 🔥 IMPORT THƯ VIỆN TOAST (Tui đang dùng react-toastify, fen xài cái khác thì đổi tên import nha)
-import { toast } from "sonner";
+import moment from "moment"; 
+import { toast } from "sonner"; // Hoặc react-toastify tùy fen
 
 function ChatWidget() {
   const dispatch = useDispatch();
@@ -30,7 +27,8 @@ function ChatWidget() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false); 
   const messagesEndRef = useRef(null);
 
-  // STATE CHO MODAL RỜI KHỎI TRÒ CHUYỆN (Vẫn giữ lại vì cái này cần thiết)
+  // 🔥 KHAI BÁO REF ĐỂ CHẶN TIN NHẮN TRÙNG LẶP (DUPLICATE)
+  const lastSentTextRef = useRef(""); 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   const { aiMessages, adminMessages, isAITyping, adminList, userList } = useSelector((state) => state.chat);
@@ -38,6 +36,7 @@ function ChatWidget() {
 
   const currentMessages = chatMode === "ai" ? aiMessages : adminMessages;
 
+  // 1. Kết nối Socket và Join phòng
   useEffect(() => {
     if (!user?._id || !socket) return;
     const joinRooms = () => {
@@ -51,6 +50,7 @@ function ChatWidget() {
     return () => socket.off("connect", joinRooms);
   }, [user]);
 
+  // 2. Cuộn xuống cuối & Đếm tin nhắn chưa đọc
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     const lastMsg = adminMessages[adminMessages.length - 1];
@@ -60,20 +60,30 @@ function ChatWidget() {
     }
   }, [adminMessages, isOpen, user, isAITyping]);
 
+  // ==========================================
+  // 🔥 LOGIC NHẬN TIN NHẮN & LỌC TRÙNG (FIX 2 TIN)
+  // ==========================================
   useEffect(() => {
     const handleMsg = (newMsg) => {
-      let isFromMe = false;
+      // Bóc tách ID an toàn chống lỗi [object Object]
       const msgAdminId = newMsg.adminId && typeof newMsg.adminId === 'object' ? newMsg.adminId._id : newMsg.adminId;
       const msgUserId = newMsg.user && typeof newMsg.user === 'object' ? newMsg.user._id : (newMsg.user || newMsg.senderId);
 
+      let isFromMe = false;
+
       if (user?.role === "admin") {
-        isFromMe = msgAdminId && String(msgAdminId) === String(user?._id);
+        // 🔥 Chống duplicate: Nếu ID khớp HOẶC Nội dung trùng với câu vừa gõ (Ref)
+        isFromMe = (msgAdminId && String(msgAdminId) === String(user?._id)) || 
+                   (newMsg.sender === "admin" && newMsg.text === lastSentTextRef.current);
       } else {
         isFromMe = newMsg.sender === "customer" && String(msgUserId) === String(user?._id);
       }
 
       if (!isFromMe) {
         dispatch(addAdminMessage(newMsg));
+      } else {
+        // Nếu là mình gửi -> Reset Ref để nhận tin nhắn tiếp theo bình thường
+        lastSentTextRef.current = ""; 
       }
     };
 
@@ -92,20 +102,8 @@ function ChatWidget() {
     setIsLoadingHistory(false);
   };
 
-  // ==========================================
-  // 🔥 FIX: BẮN TOAST NHẸ NHÀNG KHI CHƯA ĐĂNG NHẬP
-  // ==========================================
   const handleSelectMode = (mode) => {
-    if (!user) {
-      // Gọi Toast thay vì Modal rườm rà
-      toast.warning("Vui lòng đăng nhập để bắt đầu trò chuyện nhé!", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: true,
-      });
-      return; 
-    }
-    
+    if (!user) return toast.error("Vui lòng đăng nhập để bắt đầu!");
     if (mode === "ai") setChatMode("ai");
     else if (mode === "admin") {
       if (user?.role !== "admin") {
@@ -136,11 +134,18 @@ function ChatWidget() {
     fetchHistoryWithLoading(target._id);
   };
 
+  // ==========================================
+  // 🔥 GỬI TIN NHẮN & GHI NHỚ NỘI DUNG (REF)
+  // ==========================================
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!inputText.trim()) return;
 
     const currentText = inputText;
+    
+    // 1. Ghi nhớ nội dung vào Ref để lát nữa Socket dội về thì mình chặn lại
+    lastSentTextRef.current = currentText; 
+    
     setInputText(""); 
     
     const tempId = Date.now().toString(); 
@@ -161,8 +166,10 @@ function ChatWidget() {
         createdAt: new Date().toISOString()
       };
       
+      // 2. Hiện ngay lên màn hình (Optimistic UI)
       dispatch(addAdminMessage(tempMsg)); 
 
+      // 3. Gửi Socket
       if (user?.role !== "admin" && chatMode === "admin") {
         socket.emit("send_msg_to_admin", { userId: user._id, message: currentText });
       } else {
@@ -270,27 +277,21 @@ function ChatWidget() {
                 : (
                   <motion.div key="chatbox" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col h-full w-full">
                     <div className="flex-1 overflow-y-auto p-4 space-y-5 scrollbar-thin scrollbar-thumb-gray-200 relative">
-                      {isLoadingHistory ? (
-                        <div className="flex items-center justify-center h-full">
-                          <div className="text-gray-500 text-sm font-medium animate-pulse">Đang kết nối...</div>
-                        </div>
-                      ) : (
-                        <AnimatePresence initial={false}>
-                          {currentMessages
-                            ?.filter(msg => {
-                              if (chatMode === "ai") return true;
-                              if (user?.role === "admin") {
-                                const partnerId = String(chatMode === "admin" ? selectedAdmin?._id : selectedUserToChat?._id);
-                                const msgUserId = getSafeId(msg.user);
-                                const msgAdminId = getSafeId(msg.adminId);
-                                if (msgUserId === partnerId) return true;
-                                if (msgAdminId === partnerId) return true;
-                                if (!msgAdminId && msgUserId === String(user?._id)) return true;
-                                return false; 
-                              }
-                              return true;
-                            })
-                            .map((msg, index) => {
+                      <AnimatePresence initial={false}>
+                        {currentMessages
+                          ?.filter(msg => {
+                            if (chatMode === "ai") return true;
+                            if (user?.role === "admin") {
+                              const partnerId = String(chatMode === "admin" ? selectedAdmin?._id : selectedUserToChat?._id);
+                              const msgUserId = getSafeId(msg.user);
+                              const msgAdminId = getSafeId(msg.adminId);
+                              if (msgUserId === partnerId || msgAdminId === partnerId) return true;
+                              if (!msgAdminId && msgUserId === String(user?._id)) return true;
+                              return false; 
+                            }
+                            return true;
+                          })
+                          .map((msg, index) => {
                             let isMe = false;
                             const msgAdminId = getSafeId(msg.adminId);
                             const msgUserId = getSafeId(msg.user);
@@ -327,9 +328,7 @@ function ChatWidget() {
                               </motion.div>
                             )
                           })}
-                        </AnimatePresence>
-                      )}
-                      {chatMode === "ai" && isAITyping && <div className="p-2 animate-pulse text-[11px] text-gray-400 font-medium">AI đang trả lời...</div>}
+                      </AnimatePresence>
                       <div ref={messagesEndRef} />
                     </div>
                     
@@ -339,13 +338,12 @@ function ChatWidget() {
                         value={inputText} 
                         onChange={(e) => setInputText(e.target.value)} 
                         placeholder={placeholderText} 
-                        disabled={isLoadingHistory} 
                         className="flex-1 bg-gray-100 border-none rounded-full px-4 py-2.5 text-[13px] outline-none focus:ring-1 focus:ring-gray-900 transition-all" 
                       />
                       <button 
                         type="submit" 
-                        disabled={!inputText.trim() || isLoadingHistory || (chatMode === "ai" && isAITyping)} 
-                        className="text-gray-900 p-2 hover:scale-110 disabled:opacity-50 disabled:hover:scale-100 transition-all"
+                        disabled={!inputText.trim() || (chatMode === "ai" && isAITyping)} 
+                        className="text-gray-900 p-2 hover:scale-110 disabled:opacity-50 transition-all"
                       >
                         <IoSend size={22} />
                       </button>

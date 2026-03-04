@@ -2,7 +2,7 @@
 import io from "socket.io-client";
 
 // Khởi tạo kết nối 1 lần duy nhất ở đây
-const socket = io(import.meta.env.VITE_BACKEND_URL || "http://localhost:9000", {
+const socket = io(import.meta.env.VITE_BACKEND_URL || "http://localhost:9000" || "https://doantotnghiep-zhuw.onrender.com", {
   transports: ["websocket"], 
   withCredentials: true,
   autoConnect: true,

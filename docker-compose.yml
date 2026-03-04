@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+    container_name: shop_backend
+    ports:
+      - "9000:9000"
+    env_file: 
+    - ./backend/.env
+    restart: always
+    # Docker tự động hiểu link DB là từ Atlas hoặc container khác
+
+  frontend:
+    build: ./frontend/my-project
+    container_name: shop_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always

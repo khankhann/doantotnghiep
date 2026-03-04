@@ -64,7 +64,7 @@ const inputRef = useRef(null)
 
       {/* Overlay mờ phía sau khi mở search (Tùy chọn giúp tập trung vào search bar) */}
       <div 
-        className={`fixed inset-0 bg-black/30 z-40 transition-opacity duration-500 ${isOpen ? "opacity-100 visible" : "opacity-0 invisible"}`}
+        className={`fixed inset-0  bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-500 ${isOpen ? "opacity-100 visible" : "opacity-0 invisible"}`}
         onClick={() => setIsOpen(false)}
       />
 

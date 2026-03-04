@@ -69,7 +69,42 @@ export const markNotificationAsRead = createAsyncThunk(
   }
 );
 
+// 4. Async Thunk: Xoá thông báo
+export const deleteNotification = createAsyncThunk(
+  "notifications/deleteNotification",
+  async (notificationId, { rejectWithValue }) => {
+    try {
+      const userInfo = localStorage.getItem("userInfo")
+        ? JSON.parse(localStorage.getItem("userInfo"))
+        : null;
+      const userToken = localStorage.getItem("userToken");
+      const token = userInfo?.token || userToken;
 
+      if (!token) {
+        return rejectWithValue("User not authenticated");
+      }
+
+      const config = {
+        headers: { Authorization: `Bearer ${token}` },
+      };
+
+      // Gọi API DELETE xuống Backend
+      await axios.delete(
+        `${import.meta.env.VITE_BACKEND_URL}/api/notifications/${notificationId}`,
+        config
+      );
+
+      // Xoá thành công thì trả về ID để Redux Update lại mảng
+      return notificationId; 
+    } catch (error) {
+      return rejectWithValue(
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message
+      );
+    }
+  }
+);
 
 
 
@@ -133,6 +168,13 @@ const notificationSlice = createSlice({
         if (notification) {
           notification.read = true; // Đánh dấu là đã đọc trong Redux
         }
+      })
+      .addCase(deleteNotification.fulfilled, (state, action) => {
+        const notificationId = action.payload;
+        // Lọc bỏ cái thông báo có ID trùng với ID vừa xoá ra khỏi mảng
+        state.notifications = state.notifications.filter(
+          (n) => n._id !== notificationId
+        );
       });
       
   },

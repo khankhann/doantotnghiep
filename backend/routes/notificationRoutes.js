@@ -42,4 +42,27 @@ router.put("/:id/read", protect, async (req, res) => {
   }
 });
 
+
+
+// Thêm API xoá thông báo (DELETE)
+router.delete("/:id", protect, async (req, res) => {
+  try {
+    // Tìm thông báo theo ID từ trên URL gửi xuống
+    const notification = await Notification.findById(req.params.id);
+
+    if (!notification) {
+      return res.status(404).json({ message: "Không tìm thấy thông báo để xoá" });
+    }
+
+    // Tiến hành xoá nó khỏi Database
+    await notification.deleteOne(); 
+    // (Lưu ý: Nếu xài Mongoose bản cũ thì dùng await notification.remove(); nha)
+
+    res.status(200).json({ message: "Đã xoá thông báo thành công!" });
+  } catch (error) {
+    console.error("Lỗi khi xoá thông báo:", error);
+    res.status(500).json({ message: "Lỗi Server không thể xoá" });
+  }
+});
+
 module.exports = router;

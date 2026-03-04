@@ -79,7 +79,7 @@ function CreateProductPage() {
 
   return (
     <div className="max-w-5xl mx-auto p-6 shadow-md rounded-md">
-      <h2 className="text-3xl font-bold mb-6 ">Edit Product</h2>
+      <h2 className="text-3xl font-bold mb-6 ">Create Product</h2>
       <form onSubmit={handleSubmit}>
         {/* name  */}
         <div className="mb-6">

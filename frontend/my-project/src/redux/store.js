@@ -8,6 +8,11 @@ import adminReducer from "@redux/slices/adminSlice";
 import adminProductReducer from "@redux/slices/adminProductSlice";
 import adminOrderReducer from "@redux/slices/adminOrderSlice";
 import notificationReducer from "@redux/slices/notificationSlice";
+import newsReducer from "@redux/slices/newsSlice";
+import reviewsReducer from "@redux/slices/reviewsSlice"
+import chatReducer from "@redux/slices/chatSlice"
+import adminChatReducer from "@redux/slices/adminChatSlice"
+
 const store = configureStore({
     reducer : {
         auth : authReducer,
@@ -18,7 +23,11 @@ const store = configureStore({
         admin : adminReducer ,
         adminProducts : adminProductReducer ,
         adminOrders : adminOrderReducer ,
-        notifications : notificationReducer
+        notifications : notificationReducer,
+        news : newsReducer,
+        reviews : reviewsReducer,
+        chat : chatReducer,
+        adminChat : adminChatReducer
     }
 }) 
 export default store;   

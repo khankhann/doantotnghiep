@@ -4,7 +4,7 @@ import LoginPage from "@pages/LoginPage/LoginPage";
 import RegisterPage from "@pages/RegisterPage/RegisterPage";
 import ProfilePage from "@pages/ProfilePage/ProfilePage";
 import CollectionPage from "@pages/CollectionPage/CollectionPage";
-import ProductBestSeller from "@components/Products/ProductBestSeller/ProductBestSeller.jsx";
+import ProductDetail from "@components/Products/ProductDetail/ProductDetail.jsx";
 import CheckOut from "@components/Cart/CheckOut/CheckOut.jsx";
 import OrderConfirmation from "@pages/OrderConfirmation/OrderConfirmation";
 import OrderDetailPage from "@pages/OrderDetailPage/OrderDetailPage";
@@ -26,6 +26,12 @@ import ProtectedRoute from "@components/Common/ProtectedRoute/ProtectedRoute";
 import CreateProductPage from "@components/Admin/CreateProductPage/CreateProductPage";
 import TopLoadingBar from "@components/TopLoadingBar/TopLoadingBar";
 import NotificationUser from "./pages/NotificationUser/NotificationUser";
+import NewsPage from "./pages/NewsPage/NewsPage";
+import NewsPageDetail from "./pages/NewsPage/NewsPageDetail/NewsPageDetail";
+import NewsManagement from "./components/Admin/NewsManagement/NewsManagement";
+import CreateNewsPage from "./components/Admin/CreateNewsPage/CreateNewsPage";
+import EditNewsPage from "./components/Admin/EditNewsPage/EditNewsPage";
+import AdminChatPage from "./components/Admin/AdminChatPage/AdminChatPage";
 function App() {
   const dispatch = useDispatch()
   const {user} = useSelector((state) => state.auth)
@@ -54,13 +60,18 @@ function App() {
               element={<CollectionPage />}
             />
             <Route path="/product-recommend" element={<VisualStylelist /> } />
-            <Route path="product/:id" element={<ProductBestSeller />} />
+            <Route path="product/:id" element={<ProductDetail />} />
             <Route path="checkout" element={<CheckOut />} />
             <Route path="order-confirmation" element={<OrderConfirmation />} />
             <Route path="order/:id" element={<OrderDetailPage />} />
             <Route path="/my-orders" element={<MyOrderPage />} />
             <Route path="/notifications" element={ <NotificationUser />} />
+            <Route path="/news" element={<NewsPage />} />
+            <Route path="/news/:slug" element={<NewsPageDetail />} />
+       
           </Route>
+
+
           <Route path="/admin" element={ <ProtectedRoute role="admin"> <AdminLayout /> </ProtectedRoute>}>
             <Route index element={<AdminHomePage />} />
             <Route path="users" element={<UserManagement />} />
@@ -68,6 +79,10 @@ function App() {
             <Route path="products/:id/edit" element={<EditProductPage />} />
             <Route path="products/create" element={ <CreateProductPage /> }/>
             <Route path="orders" element={<OrderPage />} />
+            <Route path="news" element={<NewsManagement/> } />
+            <Route path="news/create" element = {<CreateNewsPage />} />
+            <Route path="news/:id/edit" element= {<EditNewsPage />} />
+            <Route path="chat" element={<AdminChatPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

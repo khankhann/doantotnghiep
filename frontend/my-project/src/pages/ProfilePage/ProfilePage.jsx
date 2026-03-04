@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { clearCart } from "@redux/slices/cartSlice";
 import { logout } from "@redux/slices/authSlice";
+import { clearAdminMessages, clearAIMessages } from "@redux/slices/chatSlice";
 function ProfilePage() {
 const {user} = useSelector((state)=> state.auth)
 const navigate = useNavigate()
@@ -18,6 +19,8 @@ const dispatch = useDispatch()
   const handleLogout = ()=>{
     dispatch(logout())
     dispatch(clearCart())
+    dispatch(clearAIMessages())
+    dispatch(clearAdminMessages())
     navigate("/login")
   }
 

@@ -42,7 +42,7 @@ const isShowPrice = cart.products?.reduce((total , product)=>{
     <div className="container">
       {openShopCart ? (
         <div
-          className=" fixed z-10 top-0 right-0 left-0 bottom-0 bg-[#0000004d] 
+          className=" fixed z-50 top-0 right-0 left-0 bottom-0  bg-black/50 backdrop-blur-sm
         transition-all duration-300 ease-in-out "
           onClick={handleClose}></div>
       ) : (

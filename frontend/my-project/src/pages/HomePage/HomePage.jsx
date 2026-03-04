@@ -3,7 +3,6 @@ import GenderCollection from "@components/Products/GenderCollection/GenderCollec
 import NewArrivals from "@components/Products/NewArrivals/NewArrivals.jsx";
 import ProductBestSeller from "@components/Products/ProductBestSeller/ProductBestSeller.jsx";
 import ProductAlsoLike from "@components/Products/ProductAlsoLike/ProductAlsoLike.jsx";
-import TopWearWomen from "@components/Products/TopWearWomen/TopWearWomen.jsx";
 import FeatureCollection from "@components/Products/FeatureCollection/FeatureCollection";
 import FeatureSection from "@components/Products/FeatureSection/FeatureSection";
 import { useDispatch, useSelector } from "react-redux";
@@ -12,6 +11,8 @@ import { fetchProductsbyFilter } from "@redux/slices/productsSlice";
 import ProductSaleOff from "@components/Products/ProductSaleOff/ProductSaleOff";
 import PageTransition from '@components/PageTransition/PageTransition';
 import api from "../../api/axiosClients";
+import ButtonBackTop from "@components/Common/Button/ButtonBackTop";
+import ChatWidget from "@components/Common/ChatWidget/ChatWidget";
 
 function HomePage() {
   const dispatch = useDispatch();
@@ -42,6 +43,7 @@ function HomePage() {
   }, [dispatch]);
 
   return (
+    <>
     <PageTransition >
 
     <div>
@@ -54,12 +56,15 @@ function HomePage() {
       ) }
       
       <ProductAlsoLike products ={products} loading = {loading } error = {error} />
-      <TopWearWomen />
+     
       <ProductSaleOff />
       <FeatureCollection />
       <FeatureSection />
     </div>
       </PageTransition>
+      <ButtonBackTop />
+      <ChatWidget />
+      </>
   );
 }
 

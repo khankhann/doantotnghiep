@@ -1,4 +1,55 @@
 const mongoose = require("mongoose");
+const replySchema = new mongoose.Schema({
+  user : {
+    type: mongoose.Schema.Types.ObjectId,
+    ref : "User",
+    required: true
+  },
+  name : {
+    type  : String,
+    required: true 
+  },
+  comment : {
+    type : String , 
+    required: true
+  },
+  isAdmin : {
+    type : Boolean,
+    default : false
+  }
+},{
+  timestamps: true
+})
+
+
+
+
+
+const reviewSchema = new mongoose.Schema({
+  user : {
+    type : mongoose.Schema.Types.ObjectId,
+    ref : "User",
+    required : true 
+  },
+  name : {
+    type : String,
+    required: true 
+  },
+ replies : [replySchema],
+  rating : {
+    type : Number , 
+    required : true 
+  }, 
+    comment : {
+      type : String, 
+      required : true
+    }
+  
+},{
+  timestamps : true
+})
+
+
 
 const productSchema = new mongoose.Schema(
   {
@@ -82,6 +133,7 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    reviews : [reviewSchema],
     rating: {
       type: Number,
       default: 0,

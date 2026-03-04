@@ -18,6 +18,9 @@ const orderAdminRoutes = require("./routes/adminOrderRoutes")
 const momoRoutes = require("./routes/momoRoutes")
 const notificationRoutes = require("./routes/notificationRoutes")
 const aiRecommendRoutes = require("./routes/aiRecommendRoutes")
+const chatRoutes = require("./routes/chatRoutes")
+const newsRoutes = require("./routes/newsRoutes")
+const reviewsRoutes = require("./routes/reviewsRoutes")
 
 
 dotenv.config();
@@ -25,6 +28,7 @@ const app = express();
 // socket io 
 const server = http.createServer(app)
 const { Server } = require("socket.io");
+const handleChatSocket = require("./socket/socketChat");
 
 
 
@@ -35,24 +39,14 @@ const io = new Server(server, {
     credentials: true
   },
 });
-io.on("connection", (socket) => {
-  console.log("🟢 Có người kết nối:", socket.id);
-  socket.on("join_room", (userId) => {
-    if (userId) {
-      socket.join(userId);
-      console.log(`User ${userId} đã vào phòng riêng`);
-    }
-  });
-
-  socket.on("disconnect", () => {
-    console.log("🔴 User đã thoát");
-  });
-});
+handleChatSocket(io)
 
 app.use(cors({
-    origin: ["http://localhost:5173"], 
-    credentials: true
+  // Cho phép cả 5173 (lúc code) và localhost (lúc chạy Docker)
+  origin: ["http://localhost:5173", "http://localhost"], 
+  credentials: true
 }));
+
 app.use(express.json({limit : "50mb"}));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use((req, res, next) => {
@@ -90,11 +84,18 @@ app.use("/api/admin/orders", orderAdminRoutes)
 app.use("/api/notifications", notificationRoutes)
 // ai recommend
 app.use("/api/ai-recommend", aiRecommendRoutes)
+app.use("/api/messages", chatRoutes)
+
+
+app.use("/api/news", newsRoutes)
+app.use("/api/reviews", reviewsRoutes)
 server.listen(PORT, () => {
   console.log(`server is running on http://localhost:${PORT}`);
 });
 
-app.use(cors({
-  origin: ["https://doantotnghiep-mu.vercel.app"], 
-  credentials: true
-}));
+// app.use(cors({
+//   origin: ["https://doantotnghiep-mu.vercel.app"], 
+//   credentials: true
+// }));
+
+

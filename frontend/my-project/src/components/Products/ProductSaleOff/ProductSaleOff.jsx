@@ -43,11 +43,8 @@ function ProductSaleOff() {
   // ==========================================
   // 🚀 2. TÌM 10 SẢN PHẨM "Ế NHẤT" (Lượt mua thấp nhất)
   // ==========================================
-  // Copy mảng để không làm hỏng state, sắp xếp tăng dần theo lượt mua (sold)
-  // (Nếu fen chưa có trường 'sold' trong DB, nó sẽ hiểu là 0)
   const sortedBySold = [...products].sort((a, b) => (a.sold || 0) - (b.sold || 0));
   
-  // Lấy 10 đứa đầu tiên (ế nhất) và lưu lại ID của tụi nó để dễ tra cứu
   const bottom10Products = sortedBySold.slice(0, 10);
   const bottom10Ids = bottom10Products.map(p => p._id);
 
@@ -57,24 +54,18 @@ function ProductSaleOff() {
   const processedProducts = products.map((product) => {
     let productDiscount = 0; 
     
-    // Kiểm tra xem sản phẩm này có nằm trong TOP 10 Ế NHẤT không?
     const isBottom10 = bottom10Ids.includes(product._id);
     
-    // Tính tuổi đời sản phẩm (Từ lúc THÊM VÀO `createdAt` đến HIỆN TẠI)
     const productAgeDays = (Date.now() - new Date(product.createdAt).getTime()) / (1000 * 60 * 60 * 24);
 
-    // CHỈ XÉT SALE KHI SẢN PHẨM NẰM TRONG TOP 10 Ế
     if (isBottom10) {
       if (productAgeDays >= 2) {
-        // Thêm được 20 ngày (10 ngày đầu + 10 ngày sau) mà vẫn ế -> 50%
         productDiscount = 50; 
       } else if (productAgeDays >= 10) {
-        // Thêm được 10 ngày mà lọt top ế -> 30%
         productDiscount = 30;
       }
     }
 
-    // CHỐT DEAL: Lấy mức ưu đãi tốt nhất cho khách
     const finalDiscountPercent = Math.max(productDiscount, userDiscount);
 
     return {
@@ -84,15 +75,12 @@ function ProductSaleOff() {
     };
   });
 
-  // Chỉ hiện những món CÓ GIẢM GIÁ
   const productSale = processedProducts.filter(p => p.finalDiscountPercent > 0);
 
-
   if (loading) return <p className="text-center font-bold mt-10"> Đang săn sale... </p>;
- if (error) return <p className="text-center text-red-500 mt-10"> Lỗi kết nối: {error} </p>;
+  if (error) return <p className="text-center text-red-500 mt-10"> Lỗi kết nối: {error} </p>;
 
-
- return productSale && productSale.length > 0 ? ( 
+  return productSale && productSale.length > 0 ? ( 
     <section className="relative w-full min-h-screen flex flex-col items-center justify-center">
       <img
         src="./src/assets/image/background/backgroundRegister.jpeg.webp"
@@ -116,41 +104,66 @@ function ProductSaleOff() {
         
         <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center">
           
-          {productSale.map((product) => (
-            <div 
-                key={product._id} 
-                className="bg-white rounded-2xl shadow-2xl p-4 w-full max-w-[320px] transform transition-all hover:-translate-y-2 border border-gray-100"
-            >
-              <div className="relative">
-                {/* HIỂN THỊ CHÍNH XÁC % ĐANG ĐƯỢC SALE */}
-                <span className="absolute top-2 left-2 bg-red-600 text-white text-xs font-black px-3 py-1 rounded-full shadow-md z-10">
-                  Sale {product.finalDiscountPercent}%
-                </span>
-                
-                <div className="w-full h-52 bg-gray-100 rounded-xl overflow-hidden">
-                    <img src={product?.images[0]?.url} alt={product.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
-                </div>
-              </div>
+          {productSale.map((product) => {
+            // 👉 KIỂM TRA XEM CÓ HÌNH 2 KHÔNG
+            const hasSecondImage = product.images && product.images.length > 1;
 
-              <div className="mt-4 text-center">
-                <h4 className="text-base font-bold text-gray-800 truncate" title={product.name}>
-                    {product.name}
-                </h4>
-                
-                <div className="flex justify-center items-end gap-2 mt-2">
-                  <span className="text-xl font-black text-red-600">${product.salePrice.toFixed(2)}</span>
-                  <span className="text-sm font-medium text-gray-400 line-through mb-0.5">${product.price.toFixed(2)}</span>
+            return (
+              <div 
+                  key={product._id} 
+                  className="bg-white rounded-2xl shadow-2xl p-4 w-full max-w-[320px] transform transition-all hover:-translate-y-2 border border-gray-100"
+              >
+                <div className="relative">
+                  {/* HIỂN THỊ CHÍNH XÁC % ĐANG ĐƯỢC SALE */}
+                  <span className="absolute top-2 left-2 bg-red-600 text-white text-xs font-black px-3 py-1 rounded-full shadow-md z-20">
+                    Sale {product.finalDiscountPercent}%
+                  </span>
+                  
+                  {/* 👉 KHU VỰC HÌNH ẢNH: Thêm group và relative để hover */}
+                  <Link 
+                    to={`/product/${product._id}`} 
+                    className="block w-full h-52 bg-gray-100 rounded-xl overflow-hidden relative group"
+                  >
+                    {/* HÌNH 1: Vừa zoom (scale-110) vừa mờ đi (opacity-0) khi hover */}
+                    <img 
+                      src={product?.images[0]?.url} 
+                      alt={product.name} 
+                      className={`absolute top-0 left-0 w-full h-full object-cover transition-all duration-500 ease-in-out group-hover:scale-110 ${
+                        hasSecondImage ? "group-hover:opacity-0" : ""
+                      }`} 
+                    />
+                    
+                    {/* HÌNH 2: Vừa zoom (scale-110) vừa hiện lên (opacity-100) khi hover */}
+                    {hasSecondImage && (
+                      <img
+                        src={product.images[1]?.url}
+                        alt={product.name}
+                        className="absolute top-0 left-0 w-full h-full object-cover opacity-0 transition-all duration-500 ease-in-out group-hover:opacity-100 group-hover:scale-110"
+                      />
+                    )}
+                  </Link>
                 </div>
-                
-                <Link 
-                  to={`/product/${product._id}`}
-                  className="mt-4 w-full block text-center bg-gray-900 text-white font-bold py-2.5 rounded-xl hover:bg-red-600 transition-colors shadow-md text-sm"
-                >
-                  Mua ngay kẻo lỡ
-                </Link>
+
+                <div className="mt-4 text-center">
+                  <h4 className="text-base font-bold text-gray-800 truncate" title={product.name}>
+                      {product.name}
+                  </h4>
+                  
+                  <div className="flex justify-center items-end gap-2 mt-2">
+                    <span className="text-xl font-black text-red-600">${product.salePrice.toFixed(2)}</span>
+                    <span className="text-sm font-medium text-gray-400 line-through mb-0.5">${product.price.toFixed(2)}</span>
+                  </div>
+                  
+                  <Link 
+                    to={`/product/${product._id}`}
+                    className="mt-4 w-full block text-center bg-gray-900 text-white font-bold py-2.5 rounded-xl hover:bg-red-600 transition-colors shadow-md text-sm"
+                  >
+                    Mua ngay kẻo lỡ
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           
         </div>
       </div>

@@ -1,11 +1,13 @@
 import { useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+// 👇 1. Nhớ import thêm useNavigate nè fen
+import { Link, useParams, useNavigate } from "react-router-dom"; 
 import { useDispatch, useSelector } from "react-redux";
-import { fetchOrderDetails } from "@redux/slices/orderSlice"; 
+import { fetchOrderDetails } from "../../redux/slices/orderSlice"; // (Nhớ check lại đường dẫn import slice nha)
 
 function OrderDetailPage() {
   const { id } = useParams();
   const dispatch = useDispatch();
+  const navigate = useNavigate(); // 👇 2. Khởi tạo navigate
   const { orderDetails, loading, error } = useSelector((state) => state.orders);
 
   useEffect(() => {
@@ -28,7 +30,6 @@ function OrderDetailPage() {
           <div className="mb-4 sm:mb-0">
             <h3 className="text-xl font-bold text-gray-900">
               Order #{orderDetails._id.slice(-6).toUpperCase()} 
-              {/* Hoặc để full ID: #{orderDetails._id} */}
             </h3>
             <p className="text-gray-500 text-sm mt-1">
               Placed on {new Date(orderDetails.createdAt).toLocaleDateString("vi-VN")}
@@ -77,7 +78,6 @@ function OrderDetailPage() {
               Shipping Info
             </h4>
             <div className="space-y-1 text-gray-600">
-               {/* Kiểm tra shippingAddress tồn tại trước khi render */}
               <p><span className="font-medium text-gray-900">Name:</span> {orderDetails.shippingAddress?.fullName || orderDetails.user?.name}</p>
               <p><span className="font-medium text-gray-900">Address:</span> {orderDetails.shippingAddress?.address}</p>
               <p>
@@ -88,20 +88,21 @@ function OrderDetailPage() {
           </div>
         </div>
 
-        {/* --- PRODUCT TABLE (Căn chỉnh thẳng hàng) --- */}
-        <div className="overflow-x-auto">
+        {/* --- PRODUCT TABLE --- */}
+        <div className="overflow-x-auto custom-scrollbar">
           <h4 className="text-lg font-bold text-gray-800 mb-4">Order Items</h4>
-          <table className="min-w-full border-collapse">
+          <table className="min-w-full border-collapse whitespace-nowrap">
             <thead className="bg-gray-100 text-gray-600 text-xs uppercase font-bold">
               <tr>
-                {/* 1. Cột Product: Căn trái */}
-                <th className="py-4 px-6 text-left w-1/2">Product</th>
-                {/* 2. Cột Price: Căn giữa */}
+                <th className="py-4 px-6 text-left w-2/5">Product</th>
                 <th className="py-4 px-6 text-center">Unit Price</th>
-                {/* 3. Cột Qty: Căn giữa */}
                 <th className="py-4 px-6 text-center">Quantity</th>
-                {/* 4. Cột Total: Căn phải */}
                 <th className="py-4 px-6 text-right">Total</th>
+                
+                {/* 👇 THÊM CỘT ACTIONS NẾU ĐƠN HÀNG ĐÃ TRẢ TIỀN */}
+                {orderDetails.isPaid && (
+                  <th className="py-4 px-6 text-center">Action</th>
+                )}
               </tr>
             </thead>
             <tbody className="text-gray-700 divide-y divide-gray-200">
@@ -118,7 +119,7 @@ function OrderDetailPage() {
                       <div>
                         <Link
                           to={`/product/${item.productId}`}
-                          className="font-medium text-gray-900 hover:text-blue-600"
+                          className="font-medium text-gray-900 hover:text-blue-600 truncate max-w-[200px] block"
                         >
                           {item.name}
                         </Link>
@@ -146,6 +147,19 @@ function OrderDetailPage() {
                   <td className="py-4 px-6 text-right font-bold text-gray-900">
                     ${item.price * item.quantity}
                   </td>
+
+                  {/* 👇 NÚT ĐÁNH GIÁ CHO TỪNG MÓN HÀNG */}
+                  {orderDetails.isPaid && (
+                    <td className="py-4 px-6 text-center">
+                      <button
+                        onClick={() => navigate(`/product/${item.productId || item._id}#review-section`)}
+                        className="order-action-btn-review" /* Tái sử dụng CSS minimalist lúc nãy */
+                        title="Đánh giá sản phẩm này"
+                      >
+                        Đánh giá
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

@@ -6,6 +6,7 @@ import { fetchProductDetails } from "@redux/slices/productsSlice.js";
 import { fetchSimilarProducts } from "@redux/slices/productsSlice.js";
 import { addToCart } from "@redux/slices/cartSlice.js";
 
+
 function ProductBestSeller({ productId }) {
   const { id } = useParams();
   const dispatch = useDispatch();
@@ -106,6 +107,7 @@ function ProductBestSeller({ productId }) {
 
   return (
     selectedProduct && (
+      <>
       <section className="max-w-6xl mx-auto bg-white p-8 rounded-lg">
         <h2 className=" text-3xl text-center font-bold mb-4 ">  </h2>
         <div className="flex flex-col md:flex-row">
@@ -160,7 +162,7 @@ function ProductBestSeller({ productId }) {
             <p className="text-xl text-gray-500 mb-2">
               {selectedProduct?.price}
             </p>
-            <p className="text-gray-600 mb-4">{selectedProduct.description} </p>
+            <p className="text-gray-600 mb-4 whitespace-pre-line leading-relaxed">{selectedProduct.description} </p>
             <div className="mb-4">
               <p className="text-gray-700 "> Color</p>
               <div className="flex gap-2 mt-2">
@@ -235,6 +237,11 @@ function ProductBestSeller({ productId }) {
           </div>
         </div>
       </section>
+
+</>
+
+
+
     )
   );
 }

@@ -43,7 +43,7 @@ handleChatSocket(io)
 
 app.use(cors({
   // Cho phép cả 5173 (lúc code) và localhost (lúc chạy Docker)
-  origin: ["http://localhost:5173", "http://localhost"], 
+  origin: ["http://localhost:5173", "http://localhost", "https://doantotnghiep-mu.vercel.app"], 
   credentials: true
 }));
 

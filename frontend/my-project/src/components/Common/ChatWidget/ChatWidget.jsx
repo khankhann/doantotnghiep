@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BsChatDotsFill } from "react-icons/bs";
-import { IoCloseOutline, IoArrowBackOutline, IoSend } from "react-icons/io5";
+import { IoCloseOutline, IoArrowBackOutline, IoSend, IoAlertCircleOutline } from "react-icons/io5";
 import { RiRobot2Line, RiUserSmileLine, RiGroupLine } from "react-icons/ri";
 import { useDispatch, useSelector } from "react-redux";
 import { 
@@ -68,7 +68,7 @@ function ChatWidget() {
       let isFromMe = false;
 
       if (user?.role === "admin") {
-        // 🔥 Lọc: Trùng ID Admin HOẶC Trùng nội dung vừa gõ
+        // 🔥 Lọc: Chặn nếu trùng nội dung vừa gõ để không bị hiện 2 lần
         isFromMe = (msgAdminId && String(msgAdminId) === String(user?._id)) || 
                    (newMsg.sender === "admin" && newMsg.text === lastSentTextRef.current);
       } else {
@@ -78,7 +78,7 @@ function ChatWidget() {
       if (!isFromMe) {
         dispatch(addAdminMessage(newMsg));
       } else {
-        lastSentTextRef.current = ""; // Reset Ref sau khi chặn thành công
+        lastSentTextRef.current = ""; 
       }
     };
 
@@ -129,13 +129,12 @@ function ChatWidget() {
     fetchHistoryWithLoading(target._id);
   };
 
-  // 4. Gửi tin nhắn & Hiện thị tức thì (Optimistic UI)
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!inputText.trim()) return;
 
     const currentText = inputText;
-    lastSentTextRef.current = currentText; // 🔥 Ghi nhớ để chặn trùng lặp
+    lastSentTextRef.current = currentText; 
     setInputText(""); 
     
     const tempId = Date.now().toString(); 
@@ -145,7 +144,7 @@ function ChatWidget() {
       dispatch(sendMessageToAI(currentText));
     } else {
       const myRole = user?.role === "admin" ? "admin" : "customer";
-      const targetId = chatMode === "admin" ? selectedAdmin?._id : selectedUserToChat?._id;
+      const targetId = chatMode === "admin" ? (selectedAdmin?._id || "general") : selectedUserToChat?._id;
       
       const tempMsg = {
         _id: tempId, 
@@ -180,6 +179,7 @@ function ChatWidget() {
     return String(idData);
   };
 
+  // Nút Back siêu tốc
   const handleBackDirectly = () => {
     setChatMode("select");
     setSelectedAdmin(null);
@@ -192,11 +192,6 @@ function ChatWidget() {
   else if (chatMode === "select_user") headerTitle = "Danh sách Khách hàng";
   else if (chatMode === "admin") headerTitle = selectedAdmin?.name || "Admin";
   else if (chatMode === "chat_user") headerTitle = selectedUserToChat?.name || "Khách hàng";
-
-  let placeholderText = "Nhập tin nhắn...";
-  if (chatMode === "ai") {
-    placeholderText = user?.role === "admin" ? "Hỏi doanh thu, đơn hàng hôm nay..." : "Hỏi gợi ý phối đồ, lịch sử mua...";
-  }
 
   return (
     <>
@@ -221,19 +216,42 @@ function ChatWidget() {
               <AnimatePresence mode="wait">
                 {chatMode === "select" ? (
                   <motion.div key="select" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-5 flex flex-col gap-4 justify-center h-full">
-                    <button onClick={() => handleSelectMode("ai")} className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-900 transition-all group">
+                    <button onClick={() => handleSelectMode("ai")} className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-900 transition-all group shadow-sm">
                       <div className="bg-gray-100 p-3 rounded-full group-hover:bg-gray-900 group-hover:text-white transition-colors"><RiRobot2Line size={26} /></div>
-                      <div className="text-left"><h4 className="font-bold text-gray-800">Trợ lý AI</h4><p className="text-[12px] text-gray-500">Tư vấn mua sắm 24/7</p></div>
+                      <div className="text-left"><h4 className="font-bold text-gray-800">Trợ lý AI</h4><p className="text-[12px] text-gray-500">Mua sắm thông minh hơn</p></div>
                     </button>
-                    <button onClick={() => handleSelectMode("admin")} className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-900 transition-all group">
+                    <button onClick={() => handleSelectMode("admin")} className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-900 transition-all group shadow-sm">
                       <div className="bg-gray-100 p-3 rounded-full group-hover:bg-gray-900 group-hover:text-white transition-colors"><RiUserSmileLine size={26} /></div>
-                      <div className="text-left"><h4 className="font-bold text-gray-800">Chat với Admin</h4><p className="text-[12px] text-gray-500">Hỗ trợ trực tiếp</p></div>
+                      <div className="text-left"><h4 className="font-bold text-gray-800">Chat với Admin</h4><p className="text-[12px] text-gray-500">Hỗ trợ trực tiếp 1-1</p></div>
                     </button>
                     {user?.role === "admin" && (
-                      <button onClick={() => handleSelectMode("user")} className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-900 transition-all group">
+                      <button onClick={() => handleSelectMode("user")} className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-900 transition-all group shadow-sm">
                         <div className="bg-gray-100 p-3 rounded-full group-hover:bg-gray-900 group-hover:text-white transition-colors"><RiGroupLine size={26} /></div>
-                        <div className="text-left"><h4 className="font-bold text-gray-800">Cộng đồng</h4><p className="text-[12px] text-gray-500">Quản lý khách hàng</p></div>
+                        <div className="text-left"><h4 className="font-bold text-gray-800">Cộng đồng User</h4><p className="text-[12px] text-gray-500">Quản lý danh sách khách</p></div>
                       </button>
+                    )}
+                  </motion.div>
+                ) 
+                // Màn hình Danh sách (Đã fix lỗi trắng xóa)
+                : (chatMode === "select_admin" || chatMode === "select_user") ? (
+                  <motion.div key="list" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#f8f9fa]">
+                    {((chatMode === "select_admin" ? adminList : userList)?.filter(u => String(u._id) !== String(user?._id)).length > 0) ? (
+                      (chatMode === "select_admin" ? adminList : userList)
+                        ?.filter(u => String(u._id) !== String(user?._id))
+                        .map(u => (
+                          <div key={u._id} onClick={() => chatMode === "select_admin" ? handleStartChatWithAdmin(u) : handleStartChatWithUser(u)} className="flex items-center justify-between p-3 bg-white border rounded-xl hover:border-gray-900 hover:shadow-md cursor-pointer transition-all group">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white bg-gray-900">{u.name?.charAt(0).toUpperCase()}</div>
+                              <div className="flex flex-col"><span className="text-sm font-bold text-gray-700">{u.name}</span><span className="text-[10px] text-green-500">Online</span></div>
+                            </div>
+                            <span className="text-[9px] bg-gray-900 text-white font-bold px-3 py-1.5 rounded-full">Chat</span>
+                          </div>
+                        ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-2 opacity-60">
+                         <IoAlertCircleOutline size={40} />
+                         <p className="text-xs font-medium italic">Không có dữ liệu (Server lỗi)</p>
+                      </div>
                     )}
                   </motion.div>
                 ) : (
@@ -251,20 +269,7 @@ function ChatWidget() {
                             return false; 
                           })
                           .map((msg, index) => {
-                            // Phân định bong bóng Trái/Phải
-                            let isMe = false;
-                            const msgAdminId = getSafeId(msg.adminId);
-                            const msgUserId = getSafeId(msg.user);
-
-                            if (chatMode === "ai") {
-                              isMe = msg.sender === "customer";
-                            } else if (user?.role === "admin") {
-                              if (msg.sender === "customer") isMe = false; 
-                              else isMe = msgAdminId ? msgAdminId === String(user?._id) : msgUserId !== String(user?._id);
-                            } else {
-                              isMe = msg.sender === "customer"; 
-                            }
-
+                            let isMe = (chatMode === "ai") ? (msg.sender === "customer") : (user?.role === "admin" ? (msg.sender !== "customer" && (getSafeId(msg.adminId) === String(user?._id) || getSafeId(msg.user) !== String(user?._id))) : (msg.sender === "customer"));
                             return (
                               <motion.div key={msg._id || `msg-${index}`} initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.2 }} className={`flex flex-col mb-1 ${isMe ? "items-end" : "items-start"}`}>
                                 <div className={`max-w-[80%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
@@ -280,7 +285,7 @@ function ChatWidget() {
                       <div ref={messagesEndRef} />
                     </div>
                     <form onSubmit={handleSendMessage} className="p-3 bg-white border-t flex gap-2 items-center">
-                      <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder={placeholderText} className="flex-1 bg-gray-100 border-none rounded-full px-4 py-2.5 text-[13px] outline-none focus:ring-1 focus:ring-gray-900 transition-all" />
+                      <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Nhập tin nhắn..." className="flex-1 bg-gray-100 border-none rounded-full px-4 py-2.5 text-[13px] outline-none focus:ring-1 focus:ring-gray-900 transition-all" />
                       <button type="submit" disabled={!inputText.trim() || (chatMode === "ai" && isAITyping)} className="text-gray-900 p-2 hover:scale-110 disabled:opacity-50 transition-all"><IoSend size={22} /></button>
                     </form>
                   </motion.div>

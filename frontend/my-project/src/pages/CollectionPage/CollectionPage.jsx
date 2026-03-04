@@ -50,7 +50,7 @@ function CollectionPage() {
       </button>
 {isSideBarOpen && (
         <div 
-          className="fixed inset-0  bg-[#0000004d] lg:hidden"
+          className="fixed inset-0 z-30 bg-[#0000004d] lg:hidden"
           onClick={() => setIsSideBarOpen(false)} 
         ></div>
       )}

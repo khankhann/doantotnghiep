@@ -19,7 +19,7 @@ function ProductsGrid({ products, loading, error }) {
             <div className="bg-white p-4 rounded-lg z-[20]">
               
               {/* Vùng chứa ảnh: Thêm relative để xếp ảnh đè lên nhau */}
-              <div className="relative w-full h-96 mb-4 overflow-hidden rounded-lg">
+              <div className="relative w-full z-20 h-96 mb-4 overflow-hidden rounded-lg">
                 
                 {/* HÌNH 1: Mặc định hiện. Nếu có hình 2 thì khi hover sẽ mờ đi (opacity-0) */}
                 <img

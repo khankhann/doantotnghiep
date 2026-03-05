@@ -15,7 +15,12 @@ function MyOrderPage() {
   const handleRowClick = (orderId) => {
     navigate(`/order/${orderId}`);
   };
-
+const formatPrice = (price) =>{
+return new Intl.NumberFormat("vi-VN",{
+  style : "currency",
+  currency : "VND"
+}).format(price)
+}
   if (loading) return <p className="text-center p-10 font-medium">Đang tải dữ liệu...</p>;
   if (error) return <p className="text-center p-10 text-red-500">Lỗi: {error}</p>;
 
@@ -98,7 +103,8 @@ function MyOrderPage() {
                     </td>
                     
                     <td className="py-3 px-4 font-black text-gray-900">
-                      ${order.totalPrice}
+                      
+                      {formatPrice(order.totalPrice)}
                     </td>
                     
                     <td className="py-3 px-4 text-center">

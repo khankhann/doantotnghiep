@@ -46,12 +46,24 @@ function EditProductPage() {
   }, [selectedProduct]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+   const { name, value } = e.target;
+
+  // Nếu là input Price hoặc CountInStock thì mới xử lý lọc số
+  if (name === "price" || name === "countInStock") {
+    const rawValue = value.replace(/\D/g, ""); // Chỉ lấy số
+    setProductData((prev) => ({
+      ...prev,
+      [name]: Number(rawValue),
+    }));
+  } else {
+    // Các input còn lại (Name, Description, SKU, Category...) thì giữ nguyên giá trị gõ vào
     setProductData((prev) => ({
       ...prev,
       [name]: value,
     }));
-  };
+  }
+};
+  
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -142,9 +154,9 @@ function EditProductPage() {
         <div className="mb-6">
           <label className="block font-semibold mb-2">Price</label>
           <input
-            type="number"
+            type="text"
             name="price"
-            value={productData.price}
+            value={new Intl.NumberFormat('vi-VN').format(productData.price || 0)}
             onChange={handleChange}
             className="w-full border border-gray-300 rounded-md p-2"
           />

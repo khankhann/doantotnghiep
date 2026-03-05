@@ -24,6 +24,12 @@ dispatch(deleteCartItem({
 
 }))
 }
+const formatPrice = (price)=>{
+  return new Intl.NumberFormat("vi-VN", {
+    style : "currency",
+    currency : "VND"
+  }).format(price)
+}
 
   return (
     <div>
@@ -60,7 +66,7 @@ dispatch(deleteCartItem({
               </div>
             </div>
             <div> 
-                <p>${product.price.toLocaleString()} </p>
+                <p> {formatPrice(product.price)} </p>
                 <button 
                 onClick={()=> handleRemoveCart(product.productId, product.size, product.color)}
                 >

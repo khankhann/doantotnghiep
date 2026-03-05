@@ -43,7 +43,8 @@ function ProductsGrid({ products, loading, error }) {
 
               <h3 className="text-sm mb-2"> {product.name} </h3>
               <p className="text-gray-500 font-medium text-sm tracking-tighter">
-                {product.price}
+               
+                {new Intl.NumberFormat("vi-VN", {style : 'currency', currency : "VND" }).format(product.price)}
               </p>
             </div>
           </Link>

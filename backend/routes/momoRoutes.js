@@ -10,11 +10,12 @@ router.post("/payment", async(req, res)=>{
     var secretKey = 'K951B6PE1waDMi640xX08PD3vg6EkVlz';
     var orderInfo = req.body.orderInfo || "Pay with MOMO";
     var partnerCode = 'MOMO';
-    var redirectUrl = 'https://doantotnghiep-mu.vercel.app/order-confirmation' || 'http://localhost:5173/order-confirmation';
+    var redirectUrl =  'http://localhost:5173/order-confirmation' || 'https://doantotnghiep-mu.vercel.app/order-confirmation';
+    // 'https://doantotnghiep-mu.vercel.app/order-confirmation' ||
     var ipnUrl = 'https://webhook.site/b3088a6a-2d17-4f8d-a383-71389a6c600b';
     var requestType = "payWithMethod";
     var amountRaw = req.body.amount
-    var amount = Math.floor(amountRaw * 24000).toString()
+    var amount = Math.round(req.body.amount).toString();
     var orderId = partnerCode + new Date().getTime();
     var requestId = orderId;
     var extraData ='';

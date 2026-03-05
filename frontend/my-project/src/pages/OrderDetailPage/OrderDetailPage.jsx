@@ -14,6 +14,13 @@ function OrderDetailPage() {
     dispatch(fetchOrderDetails(id));
   }, [dispatch, id]);
 
+
+  const formatPrice = (price)=>{
+    return new Intl.NumberFormat("vi-VN",{
+      style : "currency",
+      currency :"VND"
+    }).format(price)
+  }
   if (loading) return <p className="text-center p-10">Loading...</p>;
   if (error) return <p className="text-center p-10 text-red-500">Error: {error}</p>;
 
@@ -135,7 +142,8 @@ function OrderDetailPage() {
                   
                   {/* Cột Price: Căn giữa */}
                   <td className="py-4 px-6 text-center font-medium">
-                    ${item.price}
+            
+                    {formatPrice(item.price)}
                   </td>
                   
                   {/* Cột Qty: Căn giữa */}
@@ -145,7 +153,8 @@ function OrderDetailPage() {
                   
                   {/* Cột Total: Căn phải (Bold để nổi bật) */}
                   <td className="py-4 px-6 text-right font-bold text-gray-900">
-                    ${item.price * item.quantity}
+                  {formatPrice(item.price * item.quantity)}
+                    
                   </td>
 
                   {/* 👇 NÚT ĐÁNH GIÁ CHO TỪNG MÓN HÀNG */}
@@ -171,7 +180,7 @@ function OrderDetailPage() {
             <div className="w-full sm:w-80 bg-gray-50 p-6 rounded-lg space-y-3">
                 <div className="flex justify-between text-gray-600">
                     <span>Subtotal</span>
-                    <span>${orderDetails.totalPrice}</span>
+                    <span> {formatPrice(orderDetails.totalPrice)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                     <span>Shipping</span>
@@ -179,7 +188,7 @@ function OrderDetailPage() {
                 </div>
                 <div className="pt-3 border-t border-gray-200 flex justify-between text-lg font-bold text-gray-900">
                     <span>Total</span>
-                    <span className="text-emerald-600">${orderDetails.totalPrice}</span>
+                    <span className="text-emerald-600"> {formatPrice(orderDetails.totalPrice)}</span>
                 </div>
             </div>
         </div>

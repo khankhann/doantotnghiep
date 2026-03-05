@@ -50,6 +50,12 @@ function CheckOut() {
       }
     }
   };
+  const formatPrice =(price)=>{
+    return new Intl.NumberFormat("vi-VN", {
+      style : "currency",
+      currency : "VND"
+    }).format(price)
+  }
 
   const handleMomoPayment = async (e) => {
     e.preventDefault(); // Chặn form submit mặc định
@@ -137,6 +143,8 @@ function CheckOut() {
       city: "",
     });
   };
+
+  
 
   if (loading) return <p className="text-center"> loading </p>;
   if (error) return <p className="text-center"> Error : {error} </p>;
@@ -259,7 +267,7 @@ function CheckOut() {
                   <div>
                     <h3 className="text-lg mb-4 ">Pay with Paypal</h3>
                     <PaypalButton
-                      amount={cart.totalPrice}
+                      amount={formatPrice(cart.totalPrice)}
                       onSuccess={handlePaymentSuccess}
                       onError={(err) => alert("Payment failed. try again")}
                     />
@@ -340,7 +348,7 @@ function CheckOut() {
                       <p className="text-gray-500">Quantity: {product.quantity}</p>
                     </div>
                   </div>
-                  <p className="text-xl">${product.price.toLocaleString()}</p>
+                  <p className="text-xl">{formatPrice(product.price)} </p>
                 </div>
               ))}
             </div>
@@ -351,7 +359,7 @@ function CheckOut() {
             </div>
             <div className="flex justify-between items-center text-lg mb-4 ">
               <p> Subtotal </p>
-              <p> ${cart.totalPrice.toLocaleString()} </p>
+              <p> {formatPrice(cart.totalPrice)} </p>
             </div>
             <div className="flex justify-between items-center text-lg">
               <p>Shipping </p>
@@ -359,7 +367,7 @@ function CheckOut() {
             </div>
             <div className=" flex justify-between items-center text-lg mt-4 border-t pt-4 ">
               <p> Total</p>
-              <p> {cart.totalPrice?.toLocaleString()}</p>
+              <p> {formatPrice(cart.totalPrice)}</p>
             </div>
           </>
         )}

@@ -46,6 +46,12 @@ function OrderPage() {
     ? orders 
     : orders?.filter((order) => getMonthYear(order.createdAt) === selectedMonth);
 
+    const formatPrice = (price)=>{
+      return new Intl.NumberFormat("vi-VN", {
+        style : "currency",
+        currency : "VND"
+      }).format(price)
+    }
   if (loading) return <p className="text-center p-10 font-bold text-gray-600">Đang tải dữ liệu...</p>;
   if (error) return <p className="text-center p-10 text-red-500">Lỗi: {error}</p>;
 
@@ -132,7 +138,8 @@ function OrderPage() {
                     </td>
 
                     <td className="py-3 px-4 font-bold text-gray-900">
-                      ${order?.totalPrice?.toFixed(2)}
+                   
+                      {formatPrice(order?.totalPrice?.toFixed(2))}
                     </td>
 
                     <td className="py-3 px-4 text-gray-600 text-xs">

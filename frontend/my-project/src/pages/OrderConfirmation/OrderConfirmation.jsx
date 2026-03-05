@@ -144,7 +144,7 @@ const isProcessed = useRef(false)
                   </p>
                 </div>
                 <div className="ml-auto text-right">
-                  <p className="text-md">${item.price}</p>
+                  <p className="text-md">{new Intl.NumberFormat("vi-VN",{style : "currency", currency: "VND"}).format(item.price)}</p>
                   <p className="text-sm text-gray-500">Quantity: {item.quantity || item.qty}</p>
                 </div>
               </div>

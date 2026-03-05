@@ -66,7 +66,12 @@ function ProductManagement() {
 
   // Kiểm tra xem đã tick chọn hết chưa
   const isAllSelected = products?.length > 0 && selectedIds.length === products.length;
-
+const formatPrice = (price)=>{
+  return Intl.NumberFormat("vi-VN",{
+    style : "currency",
+    currency : "VND"
+  }).format(price)
+}
   if (loading) return <p className="text-center p-10 font-medium text-gray-600">Loading ...</p>;
   if (error) return <p className="text-center p-10 text-red-500">Error: {error}</p>;
 
@@ -172,7 +177,8 @@ function ProductManagement() {
                     </td>
                     <td className="p-3 flex justify-between items-center md:table-cell border-b md:border-none">
                       <span className="md:hidden text-xs text-gray-400 uppercase">Price:</span>
-                      ${product.price}
+                    
+                      {formatPrice(product.price)}
                     </td>
                     <td className="p-3 flex justify-between items-center md:table-cell border-b md:border-none">
                       <span className="md:hidden text-xs text-gray-400 uppercase">SKU:</span>

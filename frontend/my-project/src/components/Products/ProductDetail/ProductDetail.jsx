@@ -55,6 +55,12 @@ function ProductDetail({ productId }) {
     }
   }, [selectedProduct, location.hash]);
 
+  const formatPrice = (price)=>{
+    return new Intl.NumberFormat("vi-VN",{  
+        style : "currency",
+        currency : "VND"
+    }).format(price)
+  }
   const handleSetMainImage = (imageUrl) => {
    setMainImage(imageUrl)
   };
@@ -178,7 +184,8 @@ console.log(selectedProduct)
               {selectedProduct?.price && `${selectedProduct.originalPrice}`}
             </p> */}
             <p className="text-xl text-gray-500 mb-2">
-              {selectedProduct?.price}
+              {formatPrice(selectedProduct?.price)}
+              
             </p>
             <p className="text-gray-600 mb-4 whitespace-pre-line leading-relaxed">{selectedProduct.description} </p>
             <div className="mb-4">

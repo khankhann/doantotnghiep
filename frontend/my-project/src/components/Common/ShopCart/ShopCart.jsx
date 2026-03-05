@@ -38,6 +38,13 @@ const isShowPrice = cart.products?.reduce((total , product)=>{
   return total + (product.price * product.quantity)
 }, 0)
 
+  const formatPrice = (price)=>{
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency : "VND"
+    }).format(price)
+  }
+
   return (
     <div className="container">
       {openShopCart ? (
@@ -85,7 +92,7 @@ const isShowPrice = cart.products?.reduce((total , product)=>{
             <div className="flex justify-between w-full">
 
             <div>
-              <p> Price : {isShowPrice.toLocaleString()} </p>
+              <p> Price :  {formatPrice(isShowPrice)} </p>
             </div> 
             <div className="  justify-end px-4 ">
 

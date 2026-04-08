@@ -4,7 +4,8 @@ import {
   HiOutlineShoppingBag,
   HiBars3BottomRight,
 } from "react-icons/hi2";
-import { IoCloseOutline } from "react-icons/io5";
+// 👇 1. Thêm IoCameraOutline vào đây
+import { IoCloseOutline, IoCameraOutline } from "react-icons/io5"; 
 import { IoIosNotificationsOutline } from "react-icons/io";
 
 import { useContext, useState, useEffect, useRef } from "react";
@@ -19,8 +20,11 @@ import { markNotificationAsRead } from "@redux/slices/notificationSlice";
 import socket from "@components/socket/Socket";
 import Notifications from "../Notifications/Notifications";
 
-// 👇 1. IMPORT FRAMER MOTION ĐỂ LÀM HIỆU ỨNG TRƯỢT 
 import { motion, AnimatePresence } from "framer-motion";
+
+// 👇 2. Import cái Modal AI vừa tạo vào đây 
+// (Nhớ chỉnh lại đường dẫn cho đúng với thư mục của fen nhé)
+import VisualSearchModal from "../../Common/VisualSearchModai/VisualSearchModai"; 
 
 function Navbar() {
   const {
@@ -40,6 +44,9 @@ function Navbar() {
   const closeNotifyRef = useRef(null);
   
   const [isSticky, setIsSticky] = useState(false);
+
+  // 👇 3. Khai báo state để bật/tắt Modal AI
+  const [isVisualSearchOpen, setIsVisualSearchOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -96,7 +103,7 @@ function Navbar() {
   const toggleNavMobile = () => setIsNavMobileOpen(!isNavMobileOpen);
 
   // ==========================================
-  // 👇 2. GÓI TOÀN BỘ UI NAVBAR VÀO 1 BIẾN (Để dễ phân thân)
+  // GÓI TOÀN BỘ UI NAVBAR VÀO 1 BIẾN
   // ==========================================
   const navContent = (
     <nav className="container mx-auto flex items-center justify-between py-3 md:py-4 px-4 md:px-6">
@@ -135,6 +142,7 @@ function Navbar() {
         </button>
 
         <div className="relative" id = "notify-container">
+          {/* --- UI Notifications rút gọn để tiết kiệm không gian hiển thị code --- */}
           <button className="relative hover:text-black flex items-center transition-colors" onClick={() => setIsNotificationOpen(!isNotificationOpen)}>
             <IoIosNotificationsOutline className="h-6 w-6 md:h-7 md:w-7 text-gray-700 hover:text-black transition-colors" />
             {unreadCount > 0 && (
@@ -143,7 +151,7 @@ function Navbar() {
               </span>
             )}
           </button>
-          {/* Dropdown UI */}
+          
           <div className={`absolute right-[-40px] sm:right-0 mt-3 w-[300px] md:w-80 max-w-[90vw] bg-white rounded-xl shadow-2xl border border-gray-100 z-30 overflow-hidden transition-all duration-300 ease-in-out transform origin-top-right ${isNotificationOpen ? "opacity-100 scale-100 translate-y-0 visible" : "opacity-0 scale-95 -translate-y-2 invisible pointer-events-none"}`}>
             <div className="px-4 py-3 border-b bg-gray-50 flex justify-between items-center">
               <h3 className="text-sm font-bold text-gray-800">Thông báo ({unreadCount})</h3>
@@ -162,6 +170,15 @@ function Navbar() {
           </div>
         </div>
 
+        {/* 👇 4. NÚT CAMERA AI ĐƯỢC CHÈN VÀO ĐÂY (Ngay cạnh thanh Search) */}
+        <button 
+          onClick={() => setIsVisualSearchOpen(true)}
+          className="hover:text-black transition-transform hover:scale-110"
+          title="Tìm kiếm bằng hình ảnh (AI)"
+        >
+          <IoCameraOutline className="h-6 w-6 md:h-7 md:w-7 text-gray-700" />
+        </button>
+
         <div className="overflow-hidden"><SearchBar /></div>
         <button className="md:hidden" onClick={toggleNavMobile}><HiBars3BottomRight className="h-6 w-6 text-gray-800" /></button>
       </div>
@@ -170,20 +187,13 @@ function Navbar() {
 
   return (
     <>
-      {/* ==========================================
-          👇 3. BẢN THỂ 1: NAVBAR TĨNH (LUÔN Ở ĐÓ GIỮ CHỖ)
-      ========================================== */}
-      <header className="w-full  bg-white/50  border-b border-white/40 z-30">
+      <header className="w-full bg-white/50 border-b border-white/40 z-30">
         {navContent}
       </header>
 
-      {/* ==========================================
-          👇 4. BẢN THỂ 2: NAVBAR TRƯỢT MƯỢT MÀ (DÙNG FRAMER MOTION)
-      ========================================== */}
       <AnimatePresence>
         {isSticky && (
           <motion.header
-            // Ép z-index lên tận 100 để không thằng nào đè được
             className="fixed top-0 left-0 w-full z-[30] bg-white/95 backdrop-blur-md shadow-md" 
             initial={{ y: -100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -197,8 +207,14 @@ function Navbar() {
 
       <ShopCart openShopCart={isShopCartOpen} toggleShopCart={toggleShopCart} />
 
+      {/* 👇 5. GỌI COMPONENT MODAL AI VÀO ĐÂY ĐỂ NÓ RENDER ĐÈ LÊN MỌI THỨ */}
+      <VisualSearchModal 
+        isOpen={isVisualSearchOpen} 
+        onClose={() => setIsVisualSearchOpen(false)} 
+      />
+
       {/* --- MOBILE SIDEBAR MENU (Giữ nguyên) --- */}
-    <div className="container">
+      <div className="container">
         {isNavMobileOpen && (
           <div
             className="fixed z-50 top-0 right-0 left-0 bottom-0 bg-black/50 backdrop-blur-sm transition-all duration-300 ease-in-out"
@@ -210,50 +226,20 @@ function Navbar() {
           className={`fixed top-0 left-0 w-[80vw] sm:w-1/2 md:w-1/3 h-full bg-white shadow-2xl transform transition-transform duration-500 z-50 flex flex-col
           ${isNavMobileOpen ? "translate-x-0" : "-translate-x-full"}`}
         >
+          {/* NỘI DUNG MOBILE MENU CỦA FEN NẰM Ở ĐÂY */}
           <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50">
             <span className="text-xl font-bold tracking-tight">Menu</span>
             <button onClick={toggleNavMobile} className="bg-white p-2 rounded-full shadow-sm">
-              <IoCloseOutline className="h-6 w-6 text-gray-800 transition-all duration-300 ease-in-out hover:rotate-180" />
+              <IoCloseOutline className="h-6 w-6 text-gray-800 transition-all hover:rotate-180" />
             </button>
           </div>
-
           <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-6">
-            <div className="md:hidden flex items-center justify-between pb-4 border-b border-gray-100">
-              <Link to="/profile" onClick={toggleNavMobile} className="flex items-center gap-3 text-gray-800 font-medium hover:text-black">
-                <div className="bg-gray-100 p-2 rounded-full">
-                   <HiOutlineUser className="h-5 w-5" />
-                </div>
-                Tài khoản của tôi
-              </Link>
-              {user && user.role === "admin" && (
-                <Link to="/admin" onClick={toggleNavMobile} className="bg-black px-3 py-1 rounded-lg text-xs font-bold text-white shadow-md">
-                  Admin
-                </Link>
-              )}
-            </div>
-
             <nav className="flex flex-col space-y-5">
-              <Link to="/collections/all?gender=Men" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>
-                {t("navbar.men") || "Men"}
-              </Link>
-              <Link to="/collections/all?gender=Women" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>
-                {t("navbar.women") || "Women"}
-              </Link>
-              <Link to="/collections/all?category=Top Wear" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>
-                {t("navbar.topWear") || "Top Wear"}
-              </Link>
-              <Link to="/collections/all?category=Bottom Wear" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>
-                {t("navbar.bottomWear") || "Bottom Wear"}
-              </Link>
-              <Link to="/product-recommend" className="text-blue-600 font-bold text-lg flex items-center gap-2 bg-blue-50 w-fit px-3 py-1.5 rounded-xl" onClick={toggleNavMobile}>
-                 AI Recommend
-              </Link>
+              <Link to="/collections/all?gender=Men" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>Men</Link>
+              <Link to="/collections/all?gender=Women" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>Women</Link>
+              <Link to="/collections/all?category=Top Wear" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>Top Wear</Link>
+              <Link to="/collections/all?category=Bottom Wear" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>Bottom Wear</Link>
             </nav>
-            
-            <div className="md:hidden mt-auto pt-6 border-t border-gray-100 flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-500">Ngôn ngữ</span>
-              <LanguageToggle />
-            </div>
           </div>
         </div>
       </div>

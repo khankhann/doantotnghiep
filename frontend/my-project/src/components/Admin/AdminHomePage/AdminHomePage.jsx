@@ -4,8 +4,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { fetchAdminProducts } from "@redux/slices/adminProductSlice"; 
 import { fetchAllOrders } from "@redux/slices/adminOrderSlice";
+import IotDashboard from '../IotDashBoard/IotDashBoard';
 
-// Helper function để định dạng tiền VNĐ
+// Helper function để định dạng tiền VNĐ  
 const formatPrice = (price) => {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -104,6 +105,9 @@ function AdminHomePage() {
         <p className="text-center text-red-500 py-10">Lỗi: {productsError || ordersError}</p>
       ) : (
         <>
+        <div className='mb-8'>
+          <IotDashboard />
+        </div>
           {/* TẦNG 1: 3 THẺ TỔNG KẾT */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <div className="p-6 shadow-sm rounded-xl bg-white border-l-4 border-green-500 flex flex-col justify-between hover:shadow-md transition-shadow">
@@ -213,7 +217,7 @@ function AdminHomePage() {
             <div className="lg:col-span-1 flex flex-col gap-6">
               <div className="bg-white shadow-sm rounded-xl p-6 border border-gray-100">
                 <div className="flex items-center gap-2 mb-4">
-                  <h2 className="text-lg font-bold text-red-600">⚠️ Sắp hết hàng</h2>
+                  <h2 className="text-lg font-bold text-red-600"> Sắp hết hàng</h2>
                   <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded-full">{lowStockProducts.length}</span>
                 </div>
                 <div className="max-h-[250px] overflow-y-auto space-y-3">
@@ -228,7 +232,7 @@ function AdminHomePage() {
 
               <div className="bg-white shadow-sm rounded-xl p-6 border border-gray-100">
                 <div className="flex items-center gap-2 mb-4">
-                  <h2 className="text-lg font-bold text-blue-600">📦 Tồn kho nhiều</h2>
+                  <h2 className="text-lg font-bold text-blue-600">Tồn kho nhiều</h2>
                   <span className="bg-blue-100 text-blue-600 text-xs font-bold px-2 py-0.5 rounded-full">{highStockProducts.length}</span>
                 </div>
                 <div className="max-h-[250px] overflow-y-auto space-y-3">

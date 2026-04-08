@@ -32,6 +32,8 @@ import NewsManagement from "./components/Admin/NewsManagement/NewsManagement";
 import CreateNewsPage from "./components/Admin/CreateNewsPage/CreateNewsPage";
 import EditNewsPage from "./components/Admin/EditNewsPage/EditNewsPage";
 import AdminChatPage from "./components/Admin/AdminChatPage/AdminChatPage";
+import VisualSearchResult from "./pages/VisualSearchResult/VisualSearchResult";
+import SearchProductRFID from './components/Admin/SearchProductRFID/SearchProductRFID';
 function App() {
   const dispatch = useDispatch()
   const {user} = useSelector((state) => state.auth)
@@ -68,6 +70,7 @@ function App() {
             <Route path="/notifications" element={ <NotificationUser />} />
             <Route path="/news" element={<NewsPage />} />
             <Route path="/news/:slug" element={<NewsPageDetail />} />
+            <Route path="/search-result" element={<VisualSearchResult />} />
        
           </Route>
 
@@ -83,6 +86,7 @@ function App() {
             <Route path="news/create" element = {<CreateNewsPage />} />
             <Route path="news/:id/edit" element= {<EditNewsPage />} />
             <Route path="chat" element={<AdminChatPage />} />
+            <Route path= "searchRFID" element={<SearchProductRFID /> } />
           </Route>
         </Routes>
       </BrowserRouter>

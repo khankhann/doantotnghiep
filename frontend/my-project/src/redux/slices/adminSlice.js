@@ -29,18 +29,26 @@ export const addUser = createAsyncThunk("admin/addUser", async(userData , {rejec
 })
 
 // update user info 
-export const updateUser = createAsyncThunk("admin/updateUser", async({id,name, email, role})=>{
-    const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/admin/users/${id}`,
-        {name ,email , role},
-        {
-            headers : {
-                Authorization : `Bearer ${localStorage.getItem("userToken")}`
-            }
-        }
-    )
-  return response.data.user
-})
+export const updateUser = createAsyncThunk("admin/updateUser", async(userData, {rejectWithValue})=>{
+    try {
+        // 🔥 1. Bóc cái ID ra khỏi hộp FormData
+        const id = userData.get("id"); 
 
+        // 🔥 2. Bắn nguyên cái hộp userData đi, không có ngoặc nhọn
+        const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/admin/users/${id}`,
+            userData, 
+            {
+                headers : {
+                    Authorization : `Bearer ${localStorage.getItem("userToken")}`
+                }
+            }
+        )
+        return response.data.user
+    } catch(err) {
+        console.error(err)
+        return rejectWithValue(err.response.data)
+    }
+})
 // delete user 
 export const deleteUser = createAsyncThunk("admin/deleteUser", async(id)=>{
     await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/admin/users/${id}`,

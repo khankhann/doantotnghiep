@@ -3,7 +3,26 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const { protect } = require("../middleware/authMiddleware");
 const router = express.Router();
+const multer = require("multer");
+const cloudinary = require("cloudinary").v2;
 
+// Cấu hình Multer để lưu ảnh tạm vào RAM
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
+// Hàm hỗ trợ ném ảnh lên Cloudinary
+const uploadToCloudinary = (buffer) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder: "user_avatars" },
+      (error, result) => {
+        if (result) resolve(result);
+        else reject(error);
+      }
+    );
+    uploadStream.end(buffer);
+  });
+};
 // route POST / api / user / register
 
 router.post("/register", async (req, res) => {
@@ -38,6 +57,7 @@ router.post("/register", async (req, res) => {
             name: user.name,
             email: user.email,
             role: user.role,
+            avatar : user.avatar
           },
           accessToken, refreshToken
         });
@@ -93,6 +113,7 @@ router.post("/login", async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                avatar : user.avatar
             },
             accessToken,
             refreshToken,
@@ -150,5 +171,41 @@ router.post("/refresh-token", async (req, res) => {
 router.get("/profile", protect, async (req, res) => {
   res.json(req.user);
 });
+
+// PUT /api/users/profile
+router.put('/profile', protect, upload.single('avatar'), async (req, res) => {
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+        user.name = req.body.name || user.name;
+        user.email = req.body.email || user.email;
+        
+        if (req.body.password) {
+            user.password = req.body.password;
+        }
+
+        if (req.file) {
+            const cloudResult = await uploadToCloudinary(req.file.buffer);
+            user.avatar = cloudResult.secure_url;
+        }
+
+        const updatedUser = await user.save();
+
+        res.json({
+            _id: updatedUser._id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            role: updatedUser.role,
+            avatar: updatedUser.avatar, // Nhớ trả về avatar mới
+        });
+    } else {
+        res.status(404);
+        throw new Error('User not found');
+    }
+});
+
+
+
+
 
 module.exports = router;

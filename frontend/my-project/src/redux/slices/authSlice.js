@@ -63,6 +63,10 @@ const authSlice = createSlice ({
         generateNewGuestId : (state)=>{
             state.guestId = `guest_${new Date().getTime()}`
             localStorage.setItem("guestId", state.guestId)
+        },
+        updateCurrentUser : (state, action)=>{
+            state.user = {...state.user, ...action.payload}
+            localStorage.setItem("userInfo", JSON.stringify(state.user))
         }
     },
     extraReducers :  (builder)=>{
@@ -91,5 +95,5 @@ const authSlice = createSlice ({
         })
     }
 })
-export const {logout, generateNewGuestId} = authSlice.actions
+export const {logout, generateNewGuestId, updateCurrentUser} = authSlice.actions
 export default authSlice.reducer;

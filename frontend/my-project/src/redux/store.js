@@ -12,7 +12,8 @@ import newsReducer from "@redux/slices/newsSlice";
 import reviewsReducer from "@redux/slices/reviewsSlice"
 import chatReducer from "@redux/slices/chatSlice"
 import adminChatReducer from "@redux/slices/adminChatSlice"
-
+import visualSearchReducer from "@redux/slices/visualSearchSlice"
+import iotSensorReducer from "@redux/slices/iotSensorSlice"
 const store = configureStore({
     reducer : {
         auth : authReducer,
@@ -27,7 +28,9 @@ const store = configureStore({
         news : newsReducer,
         reviews : reviewsReducer,
         chat : chatReducer,
-        adminChat : adminChatReducer
+        adminChat : adminChatReducer,
+        visualSearch : visualSearchReducer,
+        iotSensor : iotSensorReducer
     }
 }) 
 export default store;   

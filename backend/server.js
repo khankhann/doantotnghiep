@@ -21,6 +21,8 @@ const aiRecommendRoutes = require("./routes/aiRecommendRoutes")
 const chatRoutes = require("./routes/chatRoutes")
 const newsRoutes = require("./routes/newsRoutes")
 const reviewsRoutes = require("./routes/reviewsRoutes")
+const aiRoutes = require("./routes/aiRoutes")
+const iotRoutes = require("./routes/iotSensorRoutes")
 
 
 dotenv.config();
@@ -85,6 +87,8 @@ app.use("/api/notifications", notificationRoutes)
 // ai recommend
 app.use("/api/ai-recommend", aiRecommendRoutes)
 app.use("/api/messages", chatRoutes)
+app.use("/api/ai", aiRoutes)
+app.use("/api/iot", iotRoutes)
 
 
 app.use("/api/news", newsRoutes)

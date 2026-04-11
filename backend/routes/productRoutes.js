@@ -185,7 +185,7 @@ router.get("/", async (req, res) => {
       query.colors = {$elemMatch: {$regex: color , $options : "i"}};
     }
     if (gender) {
-      query.gender = {$regex : gender , $options : "i"};
+      query.gender = gender
     }
     if (minPrice || maxPrice) {
       query.price = {};

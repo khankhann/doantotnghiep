@@ -97,7 +97,7 @@ router.post("/login", async (req, res) => {
       },
     };
     const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "1d",
     });
     const refreshToken = jwt.sign(payload,process.env.JWT_REFRESH_SECRET,{ 
       expiresIn: "1d" })
@@ -156,7 +156,7 @@ router.post("/refresh-token", async (req, res) => {
     };
 
     const newAccessToken = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: "15m",
+      expiresIn: "2h",
     });
 
     // Trả vé mới về

@@ -85,9 +85,9 @@ function IotDashboard() {
       {/* HEADER DASHBOARD */}
       <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
         <div>
-          <h2 className="text-2xl font-extrabold text-gray-800">🎛️ Bảng Điều Khiển Kho Hàng</h2>
+          <h2 className="text-2xl font-extrabold text-gray-800"> Quản lý nhiệt độ/ độ ẩm kho hàng</h2>
           <p className="text-sm text-gray-500 mt-1 font-medium">
-            Trạng thái hệ thống: {data.temperature === 0 ? "⏳ Đang chờ kết nối..." : "🟢 Đang hoạt động"}
+            Trạng thái hệ thống: {data.temperature === 0 ? " Đang chờ kết nối..." : "Đang hoạt động"}
           </p>
         </div>
         
@@ -107,7 +107,7 @@ function IotDashboard() {
       {/* KHUNG HIỂN THỊ ĐỒNG HỒ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         <div className="flex flex-col items-center bg-gray-50/50 p-6 rounded-2xl border border-gray-200 shadow-inner">
-          <h3 className="text-gray-500 font-bold mb-4 text-sm uppercase tracking-widest">🌡️ Nhiệt Độ Hiện Tại</h3>
+          <h3 className="text-gray-500 font-bold mb-4 text-sm uppercase tracking-widest"> Nhiệt Độ Hiện Tại</h3>
           <div className="w-full max-w-sm">
             <GaugeChart id="temp-gauge" 
               nrOfLevels={20} colors={["#10b981", "#fb923c", "#ef4444"]} arcWidth={0.25} arcPadding={0.03}
@@ -168,7 +168,7 @@ function IotDashboard() {
               onClick={() => setShowChart(!showChart)}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-100 hover:text-blue-600 transition-colors shadow-sm"
             >
-              {showChart ? "🙈 Ẩn" : "👁️ Xem"}
+              {showChart ? " Ẩn" : " Xem"}
             </button>
           </div>
         </div>

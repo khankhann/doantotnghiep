@@ -128,7 +128,7 @@ function Navbar() {
         {user && user.role === "admin" && (
           <Link to="/admin" className="hidden md:block bg-black px-2 py-0.5 rounded text-xs text-white">Admin</Link>
         )}
-        <Link to="/profile" className="hidden md:block hover:text-black transition-colors">
+        <Link to="/profile" className=" hover:text-black transition-colors">
           <HiOutlineUser className="h-6 w-6 text-gray-700" />
         </Link>
 

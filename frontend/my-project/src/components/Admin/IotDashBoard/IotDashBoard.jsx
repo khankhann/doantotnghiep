@@ -100,7 +100,7 @@ function IotDashboard() {
       
       {isError && (
         <p className="text-red-500 font-medium mb-6 bg-red-50 p-4 rounded-xl border border-red-200">
-          ⚠️ Mất kết nối hệ thống: {message}
+           Mất kết nối hệ thống: {message}
         </p>
       )}
 
@@ -121,7 +121,7 @@ function IotDashboard() {
         </div>
 
         <div className="flex flex-col items-center bg-gray-50/50 p-6 rounded-2xl border border-gray-200 shadow-inner">
-          <h3 className="text-gray-500 font-bold mb-4 text-sm uppercase tracking-widest">💦 Độ Ẩm Kho</h3>
+          <h3 className="text-gray-500 font-bold mb-4 text-sm uppercase tracking-widest"> Độ Ẩm Kho</h3>
           <div className="w-full max-w-sm">
             <GaugeChart id="hum-gauge" 
               nrOfLevels={20} colors={["#a7f3d0", "#10b981"]} arcWidth={0.25} arcPadding={0.03}
@@ -139,7 +139,7 @@ function IotDashboard() {
       <div className="bg-gray-50/50 p-6 rounded-2xl border border-gray-200 shadow-inner">
         <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4 border-b pb-4 border-gray-200">
           <h3 className="text-gray-600 font-extrabold text-lg tracking-wide border-l-4 border-blue-500 pl-3">
-             📊 BIỂU ĐỒ BIẾN THIÊN
+              BIỂU ĐỒ BIẾN THIÊN
           </h3>
           
           <div className="flex items-center gap-3">
@@ -149,10 +149,10 @@ function IotDashboard() {
               onChange={(e) => setTimeFilter(e.target.value)}
               className="bg-white border border-gray-300 text-gray-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-3 py-2 shadow-sm font-semibold outline-none"
             >
-              <option value="realtime">🔴 Real-time</option>
-              <option value="1h">🕒 1 Giờ qua</option>
-              <option value="24h">📅 24 Giờ qua</option>
-              <option value="7d">🗓️ 7 Ngày qua</option>
+              <option value="realtime"> Real-time</option>
+              <option value="1h"> 1 Giờ qua</option>
+              <option value="24h"> 24 Giờ qua</option>
+              <option value="7d"> 7 Ngày qua</option>
             </select>
 
             {/* Nút Xóa */}
@@ -160,7 +160,7 @@ function IotDashboard() {
               onClick={handleClearChart}
               className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm font-bold hover:bg-red-100 transition-colors shadow-sm"
             >
-              🗑️ Xóa
+               Xóa
             </button>
 
             {/* Nút Ẩn/Hiện */}
@@ -178,7 +178,7 @@ function IotDashboard() {
           <div className="w-full h-80 animate-fade-in-down">
             {loading ? (
               <div className="flex h-full items-center justify-center text-gray-500 font-bold border-2 border-dashed border-gray-300 rounded-xl bg-white">
-                ⏳ Đang tải dữ liệu từ Server...
+                 Đang tải dữ liệu từ Server...
               </div>
             ) : chartDataToDisplay.length === 0 ? (
               <div className="flex h-full items-center justify-center text-gray-400 font-medium border-2 border-dashed border-gray-300 rounded-xl bg-white">

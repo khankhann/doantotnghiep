@@ -151,7 +151,7 @@ function VisualSearchModal({ isOpen, onClose }) {
                         ref={videoRef} 
                         autoPlay 
                         playsInline 
-                        className="w-full h-full object-cover transform scale-x-[-1]" 
+                        className="w-full h-full object-cover  " 
                       />
                     </div>
                     <div className="flex gap-4 mt-4 w-full">

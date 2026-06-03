@@ -46,7 +46,7 @@ const VisualStylelist = () => {
   return (
     <div className="max-w-4xl mx-auto my-10 p-8 bg-white rounded-3xl shadow-2xl border border-gray-100">
       <div className="text-center mb-10">
-        <h2 className="text-3xl font-black text-gray-900 mb-2">✨ AI VIRTUAL STYLIST ✨</h2>
+        <h2 className="text-3xl font-black text-gray-900 mb-2"> AI VIRTUAL STYLIST </h2>
         <p className="text-gray-500">Khám phá phong cách phù hợp nhất với vóc dáng của bạn</p>
       </div>
       
@@ -62,8 +62,8 @@ const VisualStylelist = () => {
       onChange={(e) => setGender(e.target.value)} 
       className="w-full p-4 border-0 ring-1 ring-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none font-medium text-gray-700 bg-white"
     >
-      <option value="female">Nữ Giới 👩</option>
-      <option value="male">Nam Giới 👨</option>
+      <option value="female">Nữ Giới </option>
+      <option value="male">Nam Giới </option>
     </select>
      <input 
               type="number" 
@@ -106,7 +106,7 @@ const VisualStylelist = () => {
         {/* PHẦN 2: TẢI ẢNH AI */}
         <div className="flex flex-col justify-center items-center p-6 border-2 border-dashed border-gray-200 rounded-2xl bg-blue-50/30">
           <h3 className="font-bold text-lg text-gray-800 mb-4 flex items-center gap-2">
-            📸 AI Visual Scan (Phân tích ảnh)
+             AI Visual Scan (Phân tích ảnh)
           </h3>
           <label className={`cursor-pointer ${aiLoading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'} text-white px-8 py-4 rounded-xl font-bold shadow-lg shadow-blue-200 transition-all text-center`}>
             {aiLoading ? "Đang quét vóc dáng..." : "Tải ảnh toàn thân"}

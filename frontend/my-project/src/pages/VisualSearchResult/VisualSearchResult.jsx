@@ -1,4 +1,4 @@
-import { useState } from 'react'; // 🔥 Thêm useState
+import { useState } from 'react'; 
 import { useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import ImageVisualizer from '../ImageVisualizer/ImageVisualizer';
@@ -39,7 +39,7 @@ function VisualSearchResults() {
         <div className="container mx-auto px-4 py-12 min-h-screen">
             {/* TIÊU ĐỀ & ẢNH GỐC */}
            <div className="text-center mb-10">
-                <h1 className="text-4xl font-extrabold mb-8 text-gray-900 tracking-tight">Kết quả phân tích AI</h1>
+                <h1 className="text-4xl font-extrabold mb-8 text-gray-500 tracking-tight">Kết quả phân tích hình ảnh</h1>
                 
                 {uploadedImage && (
                     <div className="flex justify-center mb-10">
@@ -84,7 +84,7 @@ function VisualSearchResults() {
             {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-20">
                     <div className="w-16 h-16 border-4 border-gray-200 border-t-black rounded-full animate-spin mb-6"></div>
-                    <p className="text-xl font-medium text-gray-600 animate-pulse">🤖 AI đang bóc tách từng món đồ trên ảnh...</p>
+                    <p className="text-xl font-medium text-gray-600 animate-pulse"> Đang phân tích ảnh...</p>
                 </div>
             ) : (
                 <div className="space-y-16">
@@ -94,7 +94,7 @@ function VisualSearchResults() {
                             
                             <div className="flex flex-col md:flex-row items-center justify-between border-b border-gray-100 pb-6 mb-8">
                                 <div className="flex items-center gap-4">
-                                    <span className="text-3xl">🎯</span>
+                                    <span className="text-3xl"></span>
                                     <div>
                                         <h2 className="text-2xl font-bold text-gray-800">
                                             AI nhận diện: <span className="text-blue-600">{group.ai_data.class_name}</span>
@@ -140,7 +140,7 @@ function VisualSearchResults() {
                             ) : (
                                 <div className="text-center py-10 bg-gray-50 rounded-2xl">
                                     <p className="text-gray-500">
-                                        Không tìm thấy mẫu <b>{group.ai_data.class_name}</b> nào phù hợp với bộ lọc hiện tại 😢
+                                        Không tìm thấy mẫu <b>{group.ai_data.class_name}</b> nào phù hợp với bộ lọc hiện tại 
                                     </p>
                                 </div>
                             )}

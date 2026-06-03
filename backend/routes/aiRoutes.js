@@ -298,11 +298,11 @@ if (dims.length === 3 && (dims[2] === 6 || dims[2] === 7)) {
     });
 
     console.log(
-      `📊 Tìm thấy tổng cộng ${detectedObjects.length} vật thể phân biệt!`,
+      ` Tìm thấy tổng cộng ${detectedObjects.length} vật thể phân biệt!`,
     );
 
     if (detectedObjects.length === 0) {
-      console.timeEnd("⏱️ Tổng thời gian xử lý AI");
+      console.timeEnd("⏱ Tổng thời gian xử lý AI");
       return res
         .status(200)
         .json({ detected: false, detected_count: 0, final_data: [] });

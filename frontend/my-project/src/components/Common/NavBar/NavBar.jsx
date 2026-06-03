@@ -239,6 +239,16 @@ function Navbar() {
               <Link to="/collections/all?gender=Women" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>Women</Link>
               <Link to="/collections/all?category=Top Wear" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>Top Wear</Link>
               <Link to="/collections/all?category=Bottom Wear" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>Bottom Wear</Link>
+           
+           {user && user.role === "admin" && (
+                <Link 
+                  to="/admin" 
+                  className="text-red-600 hover:text-red-800 font-bold text-lg mt-2 pt-4 border-t border-gray-200" 
+                  onClick={toggleNavMobile}
+                >
+                  Admin
+                </Link>
+              )}
             </nav>
           </div>
         </div>

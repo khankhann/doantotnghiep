@@ -1,27 +1,51 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from "../../api/axiosClients"
-// (Nếu fen có file axiosClient riêng thì import vào thay thế axios nhé)
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import api from "../../api/axiosClients"; // Dùng chung 1 instance API này thôi nhé
 
-// 1. Tạo Async Thunk để gọi API lấy data từ Backend
-export const fetchSensorData = createAsyncThunk(
-    'iotSensor/fetchSensorData',
-    async (_, rejectWithValue) => {
-        try {
-            // Đổi URL này cho khớp với port Backend của fen nha
-            const response = await api.get(`${import.meta.env.VITE_BACKEND_URL}/api/iot/data`);
-            return response.data; // Trả về cục data { temperature, humidity, ... }
-        } catch (error) {
-            return rejectWithValue(error.response?.data?.message || "Lỗi kết nối trạm thời tiết");
-        }
+// 1. ASYNC THUNKS (Gọi API)
+
+export const fetchLastRfid = createAsyncThunk(
+  "iotSensor/fetchLastRfid",
+  async (_, { rejectWithValue }) => { // Thêm ngoặc nhọn ở đây
+    try {
+      const { data } = await api.get("/api/iot/rfid/latest");
+      return data; 
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Lỗi lấy mã RFID");
     }
+  }
+);
+
+export const clearBackendRfid = createAsyncThunk(
+  "iotSensor/clearBackendRfid",
+  async (_, { rejectWithValue }) => {
+    try {
+      await api.delete("/api/iot/rfid/clear");
+      return null;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message);
+    }
+  }
+);
+
+export const fetchSensorData = createAsyncThunk(
+  "iotSensor/fetchSensorData",
+  async (_, { rejectWithValue }) => { // Thêm ngoặc nhọn
+    try {
+      // Vì 'api' đã có sẵn baseURL rồi, nên chỉ cần gõ route thôi
+      const response = await api.get("/api/iot/data");
+      return response.data; 
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Lỗi kết nối trạm thời tiết");
+    }
+  }
 );
 
 export const fetchHistoryData = createAsyncThunk(
   "iotSensor/fetchHistoryData",
-  async (range, rejectWithValue) => {
+  async (range, { rejectWithValue }) => { // Thêm ngoặc nhọn
     try {
-      // Gọi API gửi kèm mốc thời gian (vd: ?range=1h)
-      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/history?range=${range}`);
+      // Đổi axios.get thành api.get và đảm bảo đúng route
+      const response = await api.get(`/api/iot/history?range=${range}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || "Lỗi lấy dữ liệu lịch sử DB");
@@ -29,69 +53,86 @@ export const fetchHistoryData = createAsyncThunk(
   }
 );
 
-
-// 2. Khởi tạo State mặc định
+// 2. KHỞI TẠO STATE MẶC ĐỊNH
 const initialState = {
-    data: {
-        temperature: 0,
-        humidity: 0,
-        tempStatus: "Đang kết nối...",
-        humStatus: "Đang kết nối...",
-        is_alert: false,
-        updatedAt: null
-    },
-    historyData :[],
-    isLoading: false,
-    isError: false,
-    message: ''
+  data: {
+    temperature: 0,
+    humidity: 0,
+    tempStatus: "Đang kết nối...",
+    humStatus: "Đang kết nối...",
+    is_alert: false,
+    updatedAt: null,
+  },
+  lastRfid: null,
+  historyData: [],
+  isLoading: false,
+  isHistoryLoading: false, // Bổ sung biến này vì ở extraReducers fen có gọi nó
+  isError: false,
+  message: "",
 };
 
-// 3. Tạo Slice
+// 3. TẠO SLICE
 const iotSensorSlice = createSlice({
-    name: 'iotSensor',
-    initialState,
-    reducers: {
-        // Có thể thêm các action nội bộ ở đây nếu cần
-        clearHistory: (state) => {
+  name: "iotSensor",
+  initialState,
+  reducers: {
+    clearHistory: (state) => {
       state.historyData = [];
-    }
     },
-    extraReducers: (builder) => {
-        builder
-            // Khi đang chờ API trả về
-            .addCase(fetchSensorData.pending, (state) => {
-                // Tắt loading đi để màn hình khỏi bị giật chớp liên tục mỗi 3 giây
-                // state.isLoading = true; 
-            })
-            // Khi API thành công
-            .addCase(fetchSensorData.fulfilled, (state, action) => {
-                state.isLoading = false;
-                state.isError = false;
-                state.data = action.payload; // Cập nhật lại kho data mới nhất
-            })
-            // Khi API thất bại (Mất kết nối mạng, server sập...)
-            .addCase(fetchSensorData.rejected, (state, action) => {
-                state.isLoading = false;
-                state.isError = true;
-                state.message = action.payload;
-            })
-            .addCase(fetchHistoryData.pending, (state) => {
-        state.isHistoryLoading = true; // Bật cờ loading báo cho giao diện biết
+    resetLastRfid: (state) => {
+      state.lastRfid = null;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      // --- XỬ LÝ FETCH SENSOR DATA ---
+      .addCase(fetchSensorData.pending, (state) => {
+        // Có thể mở comment nếu muốn hiện loading, nhưng để real-time thì ko cần
+        // state.isLoading = true; 
+      })
+      .addCase(fetchSensorData.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isError = false;
+        state.data = action.payload; 
+      })
+      .addCase(fetchSensorData.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
+      })
+
+      // --- XỬ LÝ FETCH LATEST RFID ---
+      .addCase(fetchLastRfid.fulfilled, (state, action) => {
+        // Đề phòng API trả về null
+        state.lastRfid = action.payload?.rfidTag || null;
+      })
+
+      // --- XỬ LÝ CLEAR BACKEND RFID ---
+      .addCase(clearBackendRfid.fulfilled, (state) => {
+        state.lastRfid = null; 
+      })
+      .addCase(clearBackendRfid.rejected, (state, action) => {
+        console.error("Không thể xóa mã thẻ trên Server:", action.payload);
+      })
+
+      // --- XỬ LÝ FETCH HISTORY DATA ---
+      .addCase(fetchHistoryData.pending, (state) => {
+        state.isHistoryLoading = true; 
       })
       .addCase(fetchHistoryData.fulfilled, (state, action) => {
         state.isHistoryLoading = false;
-        state.historyData = action.payload; // Nạp data mảng vào kho
+        state.historyData = action.payload; 
         state.isError = false;
       })
       .addCase(fetchHistoryData.rejected, (state, action) => {
         state.isHistoryLoading = false;
         state.isError = true;
         state.message = action.payload;
-      });   
-    }
+      });
+  },
 });
 
+export const { clearHistory, resetLastRfid } = iotSensorSlice.actions;
 
-
-export const { clearHistory } = iotSensorSlice.actions;
+// Sửa lỗi chính tả chữ "reducer"
 export default iotSensorSlice.reducer;

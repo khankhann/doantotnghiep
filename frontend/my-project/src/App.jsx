@@ -21,7 +21,7 @@ import OrderPage from "@components/Admin/OrderPage/OrderPage";
 
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
-import { fetchCart } from '@redux/slices/cartSlice';
+import { fetchCart } from "@redux/slices/cartSlice";
 import ProtectedRoute from "@components/Common/ProtectedRoute/ProtectedRoute";
 import CreateProductPage from "@components/Admin/CreateProductPage/CreateProductPage";
 import TopLoadingBar from "@components/TopLoadingBar/TopLoadingBar";
@@ -33,64 +33,67 @@ import CreateNewsPage from "./components/Admin/CreateNewsPage/CreateNewsPage";
 import EditNewsPage from "./components/Admin/EditNewsPage/EditNewsPage";
 import AdminChatPage from "./components/Admin/AdminChatPage/AdminChatPage";
 import VisualSearchResult from "./pages/VisualSearchResult/VisualSearchResult";
-import SearchProductRFID from './components/Admin/SearchProductRFID/SearchProductRFID';
+import SearchProductRFID from "./components/Admin/SearchProductRFID/SearchProductRFID";
+import VerifyEmail from "./components/Common/VerifyEmail/VerifyEmail";
 function App() {
-  const dispatch = useDispatch()
-  const {user} = useSelector((state) => state.auth)
-  useEffect(()=> {
-    const userId = user ? user._id : null
-    const guestId = localStorage.getItem("guestId")
-    dispatch(fetchCart({
-      userId , guestId , collection : "all"
-    }))
-  },[dispatch, user])
-  return (
-    
-      <BrowserRouter
-        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <TopLoadingBar />
-        <Toaster position="top-right" />
-        <Routes>
-          <Route path="/" element={<UserLayout />}>
-            {/* User layout */}
-            <Route index element={<HomePage />} />
-            <Route path="login" element={<LoginPage />} />
-            <Route path="register" element={<RegisterPage />} />
-            <Route path="profile" element={<ProfilePage />} />
-            <Route
-              path="collections/:collection"
-              element={<CollectionPage />}
-            />
-            <Route path="/product-recommend" element={<VisualStylelist /> } />
-            <Route path="product/:id" element={<ProductDetail />} />
-            <Route path="checkout" element={<CheckOut />} />
-            <Route path="order-confirmation" element={<OrderConfirmation />} />
-            <Route path="order/:id" element={<OrderDetailPage />} />
-            <Route path="/my-orders" element={<MyOrderPage />} />
-            <Route path="/notifications" element={ <NotificationUser />} />
-            <Route path="/news" element={<NewsPage />} />
-            <Route path="/news/:slug" element={<NewsPageDetail />} />
-            <Route path="/search-result" element={<VisualSearchResult />} />
-       
-          </Route>
-
-
-          <Route path="/admin" element={ <ProtectedRoute role="admin"> <AdminLayout /> </ProtectedRoute>}>
-            <Route index element={<AdminHomePage />} />
-            <Route path="users" element={<UserManagement />} />
-            <Route path="products" element={<ProductManagement />} />
-            <Route path="products/:id/edit" element={<EditProductPage />} />
-            <Route path="products/create" element={ <CreateProductPage /> }/>
-            <Route path="orders" element={<OrderPage />} />
-            <Route path="news" element={<NewsManagement/> } />
-            <Route path="news/create" element = {<CreateNewsPage />} />
-            <Route path="news/:id/edit" element= {<EditNewsPage />} />
-            <Route path="chat" element={<AdminChatPage />} />
-            <Route path= "searchRFID" element={<SearchProductRFID /> } />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+  useEffect(() => {
+    const userId = user ? user._id : null;
+    const guestId = localStorage.getItem("guestId");
+    if (userId || guestId) {
+    dispatch(fetchCart({ userId, guestId, collection: "all" }));
+  }
  
+  }, [dispatch, user]);
+  return (
+    <BrowserRouter
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <TopLoadingBar />
+      <Toaster position="top-right" />
+      <Routes>
+        <Route path="/" element={<UserLayout />}>
+          {/* User layout */}
+          <Route index element={<HomePage />} />
+          <Route path="login" element={<LoginPage />} />
+          <Route path="register" element={<RegisterPage />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="verify-email/:token" element={<VerifyEmail />} />
+          <Route path="collections/:collection" element={<CollectionPage />} />
+          <Route path="/product-recommend" element={<VisualStylelist />} />
+          <Route path="product/:id" element={<ProductDetail />} />
+          <Route path="checkout" element={<CheckOut />} />
+          <Route path="order-confirmation" element={<OrderConfirmation />} />
+          <Route path="order/:id" element={<OrderDetailPage />} />
+          <Route path="/my-orders" element={<MyOrderPage />} />
+          <Route path="/notifications" element={<NotificationUser />} />
+          <Route path="/news" element={<NewsPage />} />
+          <Route path="/news/:slug" element={<NewsPageDetail />} />
+          <Route path="/search-result" element={<VisualSearchResult />} />
+        </Route>
+
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute role="admin">
+              {" "}
+              <AdminLayout />{" "}
+            </ProtectedRoute>
+          }>
+          <Route index element={<AdminHomePage />} />
+          <Route path="users" element={<UserManagement />} />
+          <Route path="products" element={<ProductManagement />} />
+          <Route path="products/:id/edit" element={<EditProductPage />} />
+          <Route path="products/create" element={<CreateProductPage />} />
+          <Route path="orders" element={<OrderPage />} />
+          <Route path="news" element={<NewsManagement />} />
+          <Route path="news/create" element={<CreateNewsPage />} />
+          <Route path="news/:id/edit" element={<EditNewsPage />} />
+          <Route path="chat" element={<AdminChatPage />} />
+          <Route path="searchRFID" element={<SearchProductRFID />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 

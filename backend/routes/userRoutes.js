@@ -6,6 +6,10 @@ const router = express.Router();
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 
+// MỚI THÊM: Import crypto và hàm gửi mail
+const crypto = require("crypto");
+const sendEmail = require("../utils/sendEmail");
+
 // Cấu hình Multer để lưu ảnh tạm vào RAM
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -23,101 +27,132 @@ const uploadToCloudinary = (buffer) => {
     uploadStream.end(buffer);
   });
 };
-// route POST / api / user / register
 
+// ==========================================
+// 1. route POST /api/user/register (ĐÃ SỬA: Thêm gửi mail)
+// ==========================================
 router.post("/register", async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, rfidCard } = req.body; // Thêm rfidCard nếu cần
   try {
-    // register
-    // res.send({name, email , password})
     let user = await User.findOne({ email });
-    if (user) return res.status(400).json({ message: "User already exists" });
-    user = new User({ name, email, password });
     
-    // create jwt payload
-    const payload = {
-        user: {
-            id: user._id,
-            role: user.role,
-        },
-    };
-    // sign va return the token voi user data
-    const accessToken =jwt.sign(payload,process.env.JWT_SECRET, {expiresIn: "5m" })
-    const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {expiresIn: "1d"})
-    //trong vong 1p se het han token
-    user.refreshToken = refreshToken
-    await user.save();
-    //   (err, token) => {
-    //     if (err) throw err;
-    //   }
-        // gui user and token trong yeu cau gui di  status(201)
-        res.json({
-          user: {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            avatar : user.avatar
-          },
-          accessToken, refreshToken
-        });
-      
-    
+    // Nếu user đã tồn tại VÀ đã xác thực -> Chặn
+    if (user && user.isVerified) {
+        return res.status(400).json({ message: "Email này đã được sử dụng!" });
+    }
 
-    // gửi thử  user tren posman co nhan duoc khong
-    // res.status(201).json({
-    //   user: {
-    //     _id: user._id,
-    //     name: user.name,
-    //     email: user.email,
-    //     role: user.role,
-    //   },
-    // });
+    // Nếu user tồn tại nhưng CHƯA xác thực -> Cho phép ghi đè/cập nhật để gửi lại mail
+    if (!user) {
+        user = new User({ name, email, password, rfidCard });
+    } else {
+        user.name = name;
+        user.password = password;
+        user.rfidCard = rfidCard;
+    }
+
+    const verifyToken = crypto.randomBytes(20).toString('hex');
+    user.verifyToken = verifyToken;
+    user.verifyTokenExpire = Date.now() + 24 * 60 * 60 * 1000;
+    
+    await user.save();
+    // Chuẩn bị URL và Nội dung Email
+    // LƯU Ý: Phải có biến FRONTEND_URL trong file .env (ví dụ: http://localhost:3000)
+    const verifyUrl = `${process.env.FRONTEND_URL}/verify-email/${verifyToken}`;
+    const message = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+        <h2 style="color: #333; text-align: center;">Chào mừng bạn đến với Cửa Hàng!</h2>
+        <p>Xin chào <strong>${user.name}</strong>,</p>
+        <p>Cảm ơn bạn đã đăng ký tài khoản. Để hoàn tất đăng ký và bắt đầu mua sắm, vui lòng xác thực địa chỉ email của bạn bằng cách click vào nút bên dưới:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${verifyUrl}" style="background-color: #000; color: #fff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Xác Thực Email Của Tôi</a>
+        </div>
+        <p style="color: #888; font-size: 12px;">Đường link này sẽ hết hạn sau 24 giờ. Nếu bạn không thực hiện đăng ký, vui lòng bỏ qua email này.</p>
+      </div>
+    `;
+
+    // Gửi email
+    try {
+      await sendEmail({ email: user.email, subject: "Xác thực tài khoản", html: message });
+      res.status(200).json({ success: true, message: "Vui lòng kiểm tra Email để xác thực!" });
+    } catch (error) {
+      // Nếu gửi mail lỗi, xóa luôn user vừa tạo (nếu là tạo mới) để tránh rác DB
+      // Hoặc đơn giản là báo lỗi để user bấm đăng ký lại
+      return res.status(500).json({ message: "Lỗi gửi mail xác thực. Vui lòng thử lại!" });
+    }
   } catch (err) {
-    console.log("loi server", err);
-    res.status(500).send("Server error ");
+    res.status(500).json({ message: "Lỗi Server" });
+  }
+});
+// ==========================================
+// 2. route GET /api/user/verify-email/:token (MỚI THÊM)
+// ==========================================
+router.get("/verify-email/:token", async (req, res) => {
+  try {
+    // Tìm user có token khớp và token phải chưa hết hạn ($gt = greater than now)
+    const user = await User.findOne({
+      verifyToken: req.params.token,
+      verifyTokenExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Link xác thực không hợp lệ hoặc đã hết hạn!" });
+    }
+
+    // Nếu ok -> Xác thực thành công
+    user.isVerified = true;
+    user.verifyToken = undefined;
+    user.verifyTokenExpire = undefined;
+    
+    await user.save();
+
+    res.status(200).json({ success: true, message: "Xác thực tài khoản thành công! Bạn có thể đăng nhập ngay bây giờ." });
+  } catch (error) {
+    console.log("Lỗi xác thực: ", error);
+    res.status(500).send("Server error");
   }
 });
 
-// route POST/ api/ user/ Login
+// ==========================================
+// 3. route POST /api/user/login (ĐÃ SỬA: Chặn nếu chưa xác thực)
+// ==========================================
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
   try {
-    // tim user bang email
     let user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "invalid credentials" });
+    if (!user) return res.status(400).json({ message: "Tài khoản hoặc mật khẩu không đúng!" }); // Nên đổi tiếng Việt cho mượt
+    
     const isMatch = await user.matchPassword(password);
+    if (!isMatch) return res.status(400).json({ message: "Tài khoản hoặc mật khẩu không đúng!" });
 
-    if (!isMatch)
-      return res.status(400).json({ message: "Invalid Credentials" });
+    // MỚI THÊM: Chặn nếu chưa xác thực email
+    if (!user.isVerified) {
+      return res.status(403).json({ message: "Tài khoản của bạn chưa được xác thực. Vui lòng kiểm tra Email!" });
+    }
+
     const payload = {
       user: {
         id: user._id,
         role: user.role,
       },
     };
-    const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
-    const refreshToken = jwt.sign(payload,process.env.JWT_REFRESH_SECRET,{ 
-      expiresIn: "1d" })
-    user.refreshToken = refreshToken
-    await user.save()
+    
+    const accessToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" });
+    const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, { expiresIn: "1d" });
+    
+    user.refreshToken = refreshToken;
+    await user.save();
 
-    //   (err, token) => {
-    //     if (err) throw err;
-    //   }
-        res.json({
-            user: {
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                avatar : user.avatar
-            },
-            accessToken,
-            refreshToken,
-        });
+    res.json({
+        user: {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            avatar : user.avatar
+        },
+        accessToken,
+        refreshToken,
+    });
       
   } catch (err) {
     console.error(err);
@@ -125,29 +160,24 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// ==========================================
+// Các Routes Dưới Này Giữ Nguyên
+// ==========================================
+
 // route POST /api/users/refresh-token
 router.post("/refresh-token", async (req, res) => {
-  // 1. Lấy refreshToken từ body client gửi lên
   const { refreshToken } = req.body;
 
-  // Nếu không có token thì đuổi về
-  if (!refreshToken)
-    return res.status(401).json({ message: "No token provided" });
+  if (!refreshToken) return res.status(401).json({ message: "No token provided" });
 
   try {
-    // 2. Kiểm tra Token có hợp lệ không (Dùng khóa bí mật REFRESH)
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-
-    // 3. Tìm user sở hữu token này
     const user = await User.findById(decoded.user.id);
 
-    // 4. Kiểm tra xem Token này có khớp với cái đang lưu trong DB không?
-    // (Chống trường hợp Hacker dùng token cũ đã bị user đăng xuất)
     if (!user || user.refreshToken !== refreshToken) {
       return res.status(403).json({ message: "Invalid refresh token" });
     }
 
-    // 5. Nếu ngon lành -> Cấp Access Token MỚI
     const payload = {
       user: {
         id: user._id,
@@ -155,11 +185,7 @@ router.post("/refresh-token", async (req, res) => {
       },
     };
 
-    const newAccessToken = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: "2h",
-    });
-
-    // Trả vé mới về
+    const newAccessToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "2h" });
     res.json({ accessToken: newAccessToken });
   } catch (err) {
     console.error(err);
@@ -167,22 +193,19 @@ router.post("/refresh-token", async (req, res) => {
   }
 });
 
-// route GET / api / users/ profile
+// route GET /api/users/profile
 router.get("/profile", protect, async (req, res) => {
   res.json(req.user);
 });
 
 // PUT /api/users/profile
 router.put('/profile', protect, upload.single('avatar'), async (req, res) => {
-    const user = await User.findById(req.user._id);
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (user) {
         user.name = req.body.name || user.name;
-        user.email = req.body.email || user.email;
-        
-        if (req.body.password) {
-            user.password = req.body.password;
-        }
+        if (req.body.password) user.password = req.body.password;
 
         if (req.file) {
             const cloudResult = await uploadToCloudinary(req.file.buffer);
@@ -190,22 +213,16 @@ router.put('/profile', protect, upload.single('avatar'), async (req, res) => {
         }
 
         const updatedUser = await user.save();
-
         res.json({
             _id: updatedUser._id,
             name: updatedUser.name,
             email: updatedUser.email,
             role: updatedUser.role,
-            avatar: updatedUser.avatar, // Nhớ trả về avatar mới
+            avatar: updatedUser.avatar, 
         });
-    } else {
-        res.status(404);
-        throw new Error('User not found');
+    } catch (error) {
+        res.status(500).json({ message: "Cập nhật thất bại!" });
     }
 });
-
-
-
-
 
 module.exports = router;

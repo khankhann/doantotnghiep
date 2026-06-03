@@ -23,7 +23,7 @@ async function loadAIModel() {
   try {
     session = await ort.InferenceSession.create("./best.onnx");
     console.log(
-      "🧠 [AI_READY] Bộ não YOLOv8 (Model 800x800) đã nạp xong & Tối ưu!",
+      " [AI_READY] Bộ não YOLOv26 (Model 800x800) đã nạp xong & Tối ưu!",
     );
   } catch (e) {
     console.error(" [AI_ERROR] Lỗi nạp model ONNX:", e);
@@ -127,13 +127,13 @@ async function uploadHardCaseToRoboflow(imageBuffer, originalName, suspectedClas
     });
 
     if (response.data && response.data.success) {
-      console.log(`✅ [AUTO_COLLECT] Đã up thành công lên mây! ID: ${response.data.id}`);
+      console.log(` [AUTO_COLLECT] Đã up thành công lên mây! ID: ${response.data.id}`);
     } else {
-      console.warn("⚠️ [AUTO_COLLECT] Roboflow báo nhận ảnh nhưng có cảnh báo:", response.data);
+      console.warn(" [AUTO_COLLECT] Roboflow báo nhận ảnh nhưng có cảnh báo:", response.data);
     }
 
   } catch (error) {
-    console.error("❌ [AUTO_COLLECT_ERROR] Lỗi từ Roboflow:");
+    console.error(" [AUTO_COLLECT_ERROR] Lỗi từ Roboflow:");
     if (error.response) {
       console.error("  -> Trạng thái:", error.response.status, error.response.data);
     } else {
@@ -192,48 +192,74 @@ router.post("/visual-search", upload.single("image"), async (req, res) => {
     // 🔥 BIẾN TẠM ĐỂ BẮT CA KHÓ
     let hardCaseSuspectedClass = null;
 
+if (dims.length === 3 && (dims[2] === 6 || dims[2] === 7)) {
+      // 👉 TRƯỜNG HỢP A: Model YOLOv10 hoặc YOLOv8 có sẵn NMS 
+      // Shape trả về: [1, 300, 6] -> [xmin, ymin, xmax, ymax, score, class_id]
+      const numBoxes = dims[1];
+      const cols = dims[2];
+
+
     for (let i = 0; i < numBoxes; i++) {
-      let maxS = 0;
-      let classIdx = -1;
+        const xmin = output[i * cols + 0];
+        const ymin = output[i * cols + 1];
+        const xmax = output[i * cols + 2];
+        const ymax = output[i * cols + 3];
+        const score = output[i * cols + 4];
+        const classIdx = Math.round(output[i * cols + 5]);
 
-      for (let c = 0; c < numClasses; c++) {
-        const score = isTransposed
-          ? output[i * numElements + 4 + c]
-          : output[(4 + c) * numBoxes + i];
+        // Logic bắt "ca khó" (Từ 30% đến 50%)
+        if (score >= 0.2 && score <= 0.5) {
+          hardCaseSuspectedClass = CLASS_NAMES[classIdx] || "Unknown";
+        }
 
-        if (score > maxS) {
-          maxS = score;
-          classIdx = c;
+        if (score > scoreThreshold) {
+          allBoxes.push([xmin, ymin, xmax, ymax]);
+          allScores.push(score);
+          allClassIndices.push(classIdx);
         }
       }
+    } else {
+      // 👉 TRƯỜNG HỢP B: Model YOLOv8 truyền thống
+      // Shape trả về: [1, 15, 8400] hoặc [1, 8400, 15]
+      const isTransposed = dims[1] > 1000;
+      const numBoxes = isTransposed ? dims[1] : dims[2];
+      const numElements = isTransposed ? dims[2] : dims[1];
+      const numClasses = numElements - 4;
 
-      // 🔥 LOGIC BẮT "CA KHÓ" (Từ 30% đến 60%)
-      // Nếu có món đồ nào rơi vào tầm ngập ngừng, đánh dấu để up data
-      if (maxS >= 0.2 && maxS <= 0.5) {
-        hardCaseSuspectedClass = CLASS_NAMES[classIdx] || "Unknown";
-      }
+      for (let i = 0; i < numBoxes; i++) {
+        let maxS = 0;
+        let classIdx = -1;
 
-      if (maxS > scoreThreshold) {
-        const xc = isTransposed
-          ? output[i * numElements + 0]
-          : output[0 * numBoxes + i];
-        const yc = isTransposed
-          ? output[i * numElements + 1]
-          : output[1 * numBoxes + i];
-        const w = isTransposed
-          ? output[i * numElements + 2]
-          : output[2 * numBoxes + i];
-        const h = isTransposed
-          ? output[i * numElements + 3]
-          : output[3 * numBoxes + i];
+        for (let c = 0; c < numClasses; c++) {
+          const score = isTransposed
+            ? output[i * numElements + 4 + c]
+            : output[(4 + c) * numBoxes + i];
 
-        allBoxes.push([xc - w / 2, yc - h / 2, xc + w / 2, yc + h / 2]);
-        allScores.push(maxS);
-        allClassIndices.push(classIdx);
+          if (score > maxS) {
+            maxS = score;
+            classIdx = c;
+          }
+        }
+
+        if (maxS >= 0.2 && maxS <= 0.5) {
+          hardCaseSuspectedClass = CLASS_NAMES[classIdx] || "Unknown";
+        }
+
+        if (maxS > scoreThreshold) {
+          const xc = isTransposed ? output[i * numElements + 0] : output[0 * numBoxes + i];
+          const yc = isTransposed ? output[i * numElements + 1] : output[1 * numBoxes + i];
+          const w = isTransposed ? output[i * numElements + 2] : output[2 * numBoxes + i];
+          const h = isTransposed ? output[i * numElements + 3] : output[3 * numBoxes + i];
+
+          // Phải chuyển từ hệ Center-X, Center-Y sang X-Min, Y-Min
+          allBoxes.push([xc - w / 2, yc - h / 2, xc + w / 2, yc + h / 2]);
+          allScores.push(maxS);
+          allClassIndices.push(classIdx);
+        }
       }
     }
 
-    // 🔥 KÍCH HOẠT AUTO-COLLECT (CHẠY NGẦM - KHÔNG CÓ AWAIT)
+
     if (hardCaseSuspectedClass) {
       // Gửi buffer ảnh gốc + tên gốc + nhãn AI đang đoán nghi ngờ
       uploadHardCaseToRoboflow(
@@ -306,7 +332,7 @@ const requestedGender = req.body.gender || "All"
 
     const finalResponseData = await Promise.all(dbPromises);
 
-    console.timeEnd("⏱️ Tổng thời gian xử lý AI");
+    console.timeEnd("⏱ Tổng thời gian xử lý AI");
 
     return res.status(200).json({
       detected: true,
@@ -314,7 +340,7 @@ const requestedGender = req.body.gender || "All"
       final_data: finalResponseData,
     });
   } catch (error) {
-    console.error("🔴 Lỗi Multi Visual Search:", error.message);
+    console.error(" Lỗi Multi Visual Search:", error.message);
     res.status(500).json({ message: "Lỗi Server hoặc AI đang bị lỗi." });
   }
 });

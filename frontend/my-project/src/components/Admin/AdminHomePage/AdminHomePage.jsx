@@ -4,8 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { fetchAdminProducts } from "@redux/slices/adminProductSlice"; 
 import { fetchAllOrders } from "@redux/slices/adminOrderSlice";
-import IotDashboard from '../IotDashBoard/IotDashBoard';
-
+import { fetchSensorData } from "@redux/slices/iotSensorSlice";
 // Helper function để định dạng tiền VNĐ  
 const formatPrice = (price) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -22,7 +21,40 @@ function AdminHomePage() {
   const [timeFilter, setTimeFilter] = useState('7days');
 
   // ==========================================
-  // LOGIC 1: DỮ LIỆU BIỂU ĐỒ DOANH THU (ĐÃ FIX LỖI CỘNG CHUỖI)
+  // LOGIC IOT: NHẬN DỮ LIỆU TỪ ESP32
+  // ==========================================
+  const { data: sensorData } = useSelector((state) => state.iotSensor);
+  const [iotHistory, setIotHistory] = useState([]);
+
+  useEffect(() => {
+    // 3. Cứ 3 giây gọi API lấy data thật một lần
+    const interval = setInterval(() => {
+      dispatch(fetchSensorData());
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [dispatch]);
+
+  // 4. Khi sensorData thay đổi thì cập nhật vào biểu đồ (History)
+ useEffect(() => {
+  // Chỉ cập nhật history nếu thực sự có dữ liệu mới
+  if (sensorData && sensorData.temperature !== undefined) {
+    setIotHistory((prev) => {
+      const newHistory = [
+        ...prev, 
+        { 
+          time: sensorData.updatedAt || new Date().toLocaleTimeString("vi-VN"), 
+          temp: sensorData.temperature, 
+          humidity: sensorData.humidity 
+        }
+      ];
+      return newHistory.length > 15 ? newHistory.slice(1) : newHistory;
+    });
+  }
+}, [sensorData]);
+
+  // ==========================================
+  // LOGIC 1: DỮ LIỆU BIỂU ĐỒ DOANH THU (GIỮ NGUYÊN)
   // ==========================================
   const currentChartData = useMemo(() => {
     if (!orders || orders.length === 0) return [];
@@ -70,7 +102,7 @@ function AdminHomePage() {
   }, [orders, timeFilter]);
 
   // ==========================================
-  // LOGIC 2: DỮ LIỆU BIỂU ĐỒ TRÒN
+  // LOGIC 2: DỮ LIỆU BIỂU ĐỒ TRÒN (GIỮ NGUYÊN)
   // ==========================================
   const dynamicCategoryData = useMemo(() => {
     if (!products || products.length === 0) return [];
@@ -85,7 +117,7 @@ function AdminHomePage() {
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6'];
 
   // ==========================================
-  // LOGIC 3: TÌM SẢN PHẨM SẮP HẾT / TỒN NHIỀU (GIỮ LẠI THEO YÊU CẦU)
+  // LOGIC 3: TÌM SẢN PHẨM SẮP HẾT / TỒN NHIỀU (GIỮ NGUYÊN)
   // ==========================================
   const lowStockProducts = products?.filter(product => product.countInStock < 10) || [];
   const highStockProducts = products?.filter(product => product.countInStock > 50 ) || [];
@@ -105,10 +137,51 @@ function AdminHomePage() {
         <p className="text-center text-red-500 py-10">Lỗi: {productsError || ordersError}</p>
       ) : (
         <>
-        <div className='mb-8'>
-          <IotDashboard />
-        </div>
-          {/* TẦNG 1: 3 THẺ TỔNG KẾT */}
+          {/* PHẦN IOT MỚI THAY THẾ CHO IotDashboard */}
+          <div className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Cột Bảng số */}
+            <div className="flex flex-col gap-6 lg:col-span-1">
+              <div className="p-6 shadow-sm rounded-xl bg-white border-l-4 border-red-500 flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Nhiệt độ kho</h2>
+                  <p className="text-4xl font-bold text-gray-900 mt-2">{sensorData.temperature}<span className="text-2xl text-gray-400 font-medium ml-1">°C</span></p>
+                </div>
+              </div>
+              <div className="p-6 shadow-sm rounded-xl bg-white border-l-4 border-blue-500 flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Độ ẩm kho</h2>
+                  <p className="text-4xl font-bold text-gray-900 mt-2">{sensorData.humidity}<span className="text-2xl text-gray-400 font-medium ml-1">%</span></p>
+                </div>
+              </div>
+            </div>
+
+            {/* Cột Biểu đồ Real-time */}
+            <div className="bg-white p-6 shadow-sm rounded-xl lg:col-span-2 border border-gray-100">
+              <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </span>
+                Theo dõi Môi trường (Real-time)
+              </h2>
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={iotHistory}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                    <XAxis dataKey="time" tick={{ fontSize: 10 }} />
+                    <YAxis yAxisId="left" tick={{ fontSize: 10 }} domain={['dataMin - 5', 'dataMax + 5']} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} domain={['dataMin - 5', 'dataMax + 5']} />
+                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
+                    <Legend />
+                    <Line yAxisId="left" type="monotone" dataKey="temp" name="Nhiệt độ (°C)" stroke="#EF4444" strokeWidth={3} dot={{ r: 3 }} />
+                    <Line yAxisId="right" type="monotone" dataKey="humidity" name="Độ ẩm (%)" stroke="#3B82F6" strokeWidth={3} dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* TẦNG 1: 3 THẺ TỔNG KẾT (GIỮ NGUYÊN) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <div className="p-6 shadow-sm rounded-xl bg-white border-l-4 border-green-500 flex flex-col justify-between hover:shadow-md transition-shadow">
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide"> Total Revenue </h2>
@@ -128,7 +201,7 @@ function AdminHomePage() {
             </div>
           </div>
 
-          {/* TẦNG 2: CÁC BIỂU ĐỒ THỐNG KÊ */}
+          {/* TẦNG 2: CÁC BIỂU ĐỒ THỐNG KÊ (GIỮ NGUYÊN) */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div className="bg-white p-6 shadow-sm rounded-xl lg:col-span-2 border border-gray-100">
               <div className="flex justify-between items-center mb-6">
@@ -177,7 +250,7 @@ function AdminHomePage() {
             </div>
           </div>
 
-          {/* TẦNG 3: BẢNG ORDERS VÀ CẢNH BÁO TỒN KHO */}
+          {/* TẦNG 3: BẢNG ORDERS VÀ CẢNH BÁO TỒN KHO (GIỮ NGUYÊN) */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="bg-white shadow-sm rounded-xl p-6 border border-gray-100 lg:col-span-2">
               <h2 className="text-lg font-bold mb-4">Recent Orders</h2>
@@ -213,7 +286,7 @@ function AdminHomePage() {
               </div>
             </div>
 
-            {/* PHẦN CẢNH BÁO TỒN KHO (ĐÃ GIỮ LẠI) */}
+            {/* PHẦN CẢNH BÁO TỒN KHO */}
             <div className="lg:col-span-1 flex flex-col gap-6">
               <div className="bg-white shadow-sm rounded-xl p-6 border border-gray-100">
                 <div className="flex items-center gap-2 mb-4">

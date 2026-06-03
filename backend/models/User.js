@@ -18,6 +18,7 @@ const userSchema = new mongoose.Schema({
     required: true,
     minLength: 6,
   },
+  rfidCard: { type: String, required: false, unique: true },
   role: {
     type: String,
     enum: ["customer", "admin"],
@@ -30,7 +31,13 @@ const userSchema = new mongoose.Schema({
   refreshToken : {
     type: String,
     default: ""
-  } 
+  } ,
+  isVerified: {
+    type : Boolean,
+    default: false
+  },
+  verifyToken: String,
+  verifyTokenExpire: Date
 },
 {timestamps : true}
 );

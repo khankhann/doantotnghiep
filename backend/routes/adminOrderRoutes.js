@@ -1,6 +1,7 @@
 const express = require("express");
 const Order = require("../models/Order");
 const Notification = require("../models/Notification"); 
+const Product = require("../models/Product")
 const { protect, admin } = require("../middleware/authMiddleware");
 const router = express.Router();
 
@@ -84,6 +85,60 @@ router.delete("/:id", protect, admin, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "server error" });
+  }
+});
+
+// route post / api/ admin/ orders/ pos 
+router.post("/pos", protect, admin, async (req, res) => {
+  try {
+    const { orderItems, customerName, customerPhone, totalPrice } = req.body;
+
+    if (orderItems && orderItems.length === 0) {
+      return res.status(400).json({ message: "Không có sản phẩm nào trong đơn hàng" });
+    }
+
+    // 1. Tạo đơn hàng mới
+    const order = new Order({
+      user: req.user._id, // Admin là người tạo đơn này
+      orderItems,
+      // Lưu thông tin khách vãng lai vào shippingAddress cho đúng chuẩn Schema hiện tại
+      shippingAddress: {
+        fullName: customerName,
+        phone: customerPhone,
+        address: "Mua tại cửa hàng (POS)",
+        city: "Tại quầy",
+        postalCode: "00000",
+        country: "VN"
+      },
+      paymentMethod: "VietQR - POS",
+      itemsPrice: totalPrice,
+      taxPrice: 0,
+      shippingPrice: 0,
+      totalPrice: totalPrice,
+      isPaid: true,           // Bán tại quầy thì xác nhận đã thanh toán luôn
+      paidAt: Date.now(),
+      isDelivered: true,      // Khách lấy hàng luôn
+      deliveredAt: Date.now(),
+      status: "Delivered"     // Cập nhật status thành Delivered cho đồng bộ
+    });
+
+    const createdOrder = await order.save();
+
+    // 2. TRỪ TỒN KHO THÔNG MINH
+    for (const item of orderItems) {
+      // Tìm sản phẩm trong MongoDB
+      const product = await Product.findById(item.productId);
+      if (product) {
+        // Trừ đi số lượng khách mua
+        product.countInStock = product.countInStock - item.quantity;
+        await product.save();
+      }
+    }
+
+    res.status(201).json(createdOrder);
+  } catch (error) {
+    console.error("Lỗi tạo đơn POS:", error);
+    res.status(500).json({ message: "Lỗi Server khi tạo đơn POS" });
   }
 });
 

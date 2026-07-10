@@ -2,12 +2,12 @@ import { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { addUser, deleteUser, fetchUsers, updateUser } from "@redux/slices/adminSlice";
 import { updateCurrentUser } from "@redux/slices/authSlice";
-import { fetchLastRfid, resetLastRfid,clearBackendRfid } from "@redux/slices/iotSensorSlice";
+import { fetchLastRfid, resetLastRfid, clearBackendRfid } from "@redux/slices/iotSensorSlice";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   IoSearchOutline, IoTrashOutline, IoCameraOutline, IoIdCardOutline, 
-  IoCreateOutline, IoCloseOutline, IoLockClosedOutline, IoFilterOutline, IoPersonAddOutline
+  IoCreateOutline, IoCloseOutline, IoLockClosedOutline, IoFilterOutline, IoPersonAddOutline, IoRefreshOutline
 } from "react-icons/io5";
 
 function UserManagement() {
@@ -27,10 +27,12 @@ function UserManagement() {
   const [rfidValue, setRfidValue] = useState("");
   const rfidInputRef = useRef(null);
 
+  // 👉 STATE MỚI: Dành riêng cho Modal Chỉnh Sửa
   const [editingUser, setEditingUser] = useState(null);
-  const [editFormData, setEditFormData] = useState({ name: "", email: "", role: "" });
+  const [editFormData, setEditFormData] = useState({ name: "", email: "", role: "", rfidCard: "" });
   const [editAvatarPreview, setEditAvatarPreview] = useState(null);
   const [editAvatarFile, setEditAvatarFile] = useState(null);
+  const [isScanningEditRfid, setIsScanningEditRfid] = useState(false); // Trạng thái đang quét thẻ ở form Edit
 
   const [authModalConfig, setAuthModalConfig] = useState({ isOpen: false, actionType: null, targetUserId: null, pendingData: null });
   const [adminPassword, setAdminPassword] = useState("");
@@ -39,27 +41,37 @@ function UserManagement() {
     if (user?.role === "admin") { dispatch(fetchUsers()); }
   }, [dispatch, user]);
 
-  // 🔥 ĐỒNG BỘ RFID TỪ BACKEND
- useEffect(() => {
+  // 🔥 NÂNG CẤP LOGIC LẮNG NGHE RFID CHUNG CHO CẢ 2 FORM
+  useEffect(() => {
     let interval;
-    if (rfidModalOpen) {
+    // Bật máy quét nếu Modal Tạo Mới đang mở HOẶC bấm nút Quét ở Modal Edit
+    if (rfidModalOpen || isScanningEditRfid) {
       interval = setInterval(() => { dispatch(fetchLastRfid()); }, 1000);
-      if (rfidInputRef.current) rfidInputRef.current.focus();
+      if (rfidModalOpen && rfidInputRef.current) rfidInputRef.current.focus();
     } else {
-      // 🔥 KHI ĐÓNG MODAL: Xóa sạch ở cả Redux và Backend 🔥
-      dispatch(resetLastRfid());     // Xóa ở Redux (Frontend)
-      dispatch(clearBackendRfid());  // Xóa ở Server (Backend)
-      setRfidValue("");              // Xóa ở Input
+      // Khi không quét nữa thì dọn dẹp bộ nhớ
+      dispatch(resetLastRfid());     
+      dispatch(clearBackendRfid());  
+      if (!rfidModalOpen) setRfidValue(""); 
     }
     return () => clearInterval(interval);
-  }, [rfidModalOpen, dispatch]);
+  }, [rfidModalOpen, isScanningEditRfid, dispatch]);
 
+  // 🔥 XỬ LÝ KHI NHẬN ĐƯỢC MÃ THẺ
   useEffect(() => {
     if (lastRfid) {
-      setRfidValue(lastRfid);
-      toast.success("Đã nhận diện thẻ RFID!");
+      if (rfidModalOpen) {
+        // Đang ở form Tạo Mới
+        setRfidValue(lastRfid);
+        toast.success("Đã nhận diện thẻ RFID!");
+      } else if (isScanningEditRfid) {
+        // Đang ở form Chỉnh Sửa
+        setEditFormData(prev => ({ ...prev, rfidCard: lastRfid }));
+        setIsScanningEditRfid(false); // Quét xong tự động tắt chế độ quét
+        toast.success("Đã cập nhật mã thẻ mới!");
+      }
     }
-  }, [lastRfid]);
+  }, [lastRfid, rfidModalOpen, isScanningEditRfid]);
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
@@ -79,46 +91,43 @@ function UserManagement() {
   };
 
   const handleRfidSubmit = (e) => {
-  e.preventDefault();
-  if (!rfidValue) return toast.error("Chưa có mã thẻ!");
+    e.preventDefault();
+    if (!rfidValue) return toast.error("Chưa có mã thẻ!");
 
-  const submitData = new FormData();
-  Object.keys(formData).forEach((key) => submitData.append(key, formData[key]));
-  submitData.append("rfidCard", rfidValue);
-  if (avatarFile) submitData.append("avatar", avatarFile);
+    const submitData = new FormData();
+    Object.keys(formData).forEach((key) => submitData.append(key, formData[key]));
+    submitData.append("rfidCard", rfidValue);
+    if (avatarFile) submitData.append("avatar", avatarFile);
 
-  // Gửi dữ liệu đi
-  dispatch(addUser(submitData)).then((res) => {
-    // TRƯỜNG HỢP THÀNH CÔNG
-    if (!res.error) {
-      toast.success("Tạo user thành công!");
-      dispatch(resetLastRfid());
-      setFormData({ name: "", email: "", password: "", role: "customer" });
-      setAvatarPreview(null);
-      setRfidModalOpen(false);
-      setRfidValue("");
-    } 
-    // 🔥 TRƯỜNG HỢP THẤT BẠI (TRÙNG EMAIL/RFID)
-  else {
-      // 🚩 SỬA TẠI ĐÂY: Phải lấy .message hoặc .payload.message
-      // Nếu res.payload là { message: "..." } thì mình phải lấy cái bên trong
-      const errorMsg = res.payload?.message || res.payload || "Có lỗi xảy ra!";
-      
-      // Nếu errorMsg vẫn là object, React sẽ crash. Ép nó về string cho chắc:
-     
-      toast.error(res.payload);
-    }
-  });
-};
+    dispatch(addUser(submitData)).then((res) => {
+      if (!res.error) {
+        toast.success("Tạo user thành công!");
+        dispatch(resetLastRfid());
+        setFormData({ name: "", email: "", password: "", role: "customer" });
+        setAvatarPreview(null);
+        setRfidModalOpen(false);
+        setRfidValue("");
+      } else {
+        const errorMsg = res.payload?.message || res.payload || "Có lỗi xảy ra!";
+        toast.error(errorMsg);
+      }
+    });
+  };
 
   const handleEditClick = (userData) => {
     setEditingUser(userData);
-    setEditFormData({ name: userData.name, email: userData.email, role: userData.role });
+    // 👉 Đổ dữ liệu cũ vào (bao gồm cả rfidCard)
+    setEditFormData({ 
+      name: userData.name, 
+      email: userData.email, 
+      role: userData.role,
+      rfidCard: userData.rfidCard || "" // Tránh lỗi null nếu user cũ chưa có thẻ
+    });
     setEditAvatarPreview(userData.avatar || null);
     setEditAvatarFile(null);
+    setIsScanningEditRfid(false); // Reset trạng thái quét
   };
 
-  // 🔥 TÁCH HÀM EDIT SUBMIT CHO GỌN
   const handleEditSubmit = (e) => {
     e.preventDefault();
     const updateData = new FormData();
@@ -126,6 +135,9 @@ function UserManagement() {
     updateData.append("name", editFormData.name);
     updateData.append("email", editFormData.email);
     updateData.append("role", editFormData.role);
+    // 👉 Đóng gói mã RFID mới (nếu có) để gửi lên server
+    updateData.append("rfidCard", editFormData.rfidCard);
+    
     if (editAvatarFile) updateData.append("avatar", editAvatarFile);
     
     setAuthModalConfig({ isOpen: true, actionType: "edit", targetUserId: editingUser._id, pendingData: updateData });
@@ -158,7 +170,6 @@ function UserManagement() {
 
   return (
     <div className="relative min-h-screen p-4 sm:p-8 bg-[#fdfdfd]">
-      {/* Background Liquid */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute top-[-5%] left-[-5%] w-[400px] h-[400px] bg-blue-100/40 rounded-full blur-[100px]" />
         <div className="absolute bottom-[-5%] right-[-5%] w-[400px] h-[400px] bg-pink-100/40 rounded-full blur-[100px]" />
@@ -229,7 +240,6 @@ function UserManagement() {
                         </td>
                         <td className="p-6"><span className={`px-3 py-1 rounded-full text-[10px] font-black ${u.role === 'admin' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>{u.role.toUpperCase()}</span></td>
                         <td className="p-6 text-right">
-                          {/* 🔥 SỬA: Luôn hiện nút trên mobile, chỉ ẩn trên desktop khi không hover */}
                           <div className="flex justify-end gap-2 lg:opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onClick={() => handleEditClick(u)} className="p-2.5 bg-white rounded-xl text-amber-500 shadow-sm border border-gray-50 hover:scale-110 transition-transform"><IoCreateOutline size={18}/></button>
                             <button onClick={() => setAuthModalConfig({isOpen: true, actionType: "delete", targetUserId: u._id})} className="p-2.5 bg-white rounded-xl text-red-500 shadow-sm border border-gray-50 hover:scale-110 transition-transform"><IoTrashOutline size={18}/></button>
@@ -245,7 +255,7 @@ function UserManagement() {
         </div>
       </div>
 
-      {/* MODAL RFID */}
+      {/* MODAL RFID TẠO MỚI */}
       <AnimatePresence>
         {rfidModalOpen && (
           <div className="fixed inset-0 flex items-center justify-center z-[1000] px-4">
@@ -266,20 +276,22 @@ function UserManagement() {
         )}
       </AnimatePresence>
 
-      {/* MODAL CHỈNH SỬA */}
+      {/* MODAL CHỈNH SỬA USER */}
       <AnimatePresence>
         {editingUser && (
           <div className="fixed inset-0 flex items-center justify-center z-[1000] px-4">
-            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={() => setEditingUser(null)} className="fixed inset-0 bg-black/20 backdrop-blur-sm" />
+            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={() => setEditingUser(null)} className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
             <motion.div initial={{y:50, opacity:0}} animate={{y:0, opacity:1}} exit={{y:50, opacity:0}} className="bg-white rounded-[2.5rem] p-8 w-full max-w-[480px] z-[1001] shadow-2xl relative border border-white">
                 <button onClick={() => setEditingUser(null)} className="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full transition-all text-gray-400"><IoCloseOutline size={20}/></button>
-                <h3 className="text-xl font-bold mb-8 italic uppercase tracking-tighter">Edit Member</h3>
-                <form onSubmit={handleEditSubmit} className="space-y-6">
-                  <div className="flex justify-center">
+                <h3 className="text-xl font-bold mb-6 italic uppercase tracking-tighter">Edit Member</h3>
+                
+                <form onSubmit={handleEditSubmit} className="space-y-4">
+                  {/* Ảnh đại diện */}
+                  <div className="flex justify-center mb-2">
                     <label className="relative cursor-pointer group">
-                      <div className="w-24 h-24 rounded-2xl border-4 border-gray-50 shadow-sm overflow-hidden flex items-center justify-center bg-gray-100">
-                        {editAvatarPreview ? <img src={editAvatarPreview} className="w-full h-full object-cover" /> : <span className="text-4xl font-bold text-gray-300">{editFormData.name.charAt(0)}</span>}
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><IoCameraOutline className="text-white" size={24} /></div>
+                      <div className="w-20 h-20 rounded-2xl border-4 border-gray-50 shadow-sm overflow-hidden flex items-center justify-center bg-gray-100">
+                        {editAvatarPreview ? <img src={editAvatarPreview} className="w-full h-full object-cover" /> : <span className="text-3xl font-bold text-gray-300">{editFormData.name.charAt(0)}</span>}
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><IoCameraOutline className="text-white" size={20} /></div>
                       </div>
                       <input type="file" className="hidden" accept="image/*" onChange={(e) => {
                           const file = e.target.files[0];
@@ -287,13 +299,48 @@ function UserManagement() {
                       }} />
                     </label>
                   </div>
-                  <input type="text" value={editFormData.name} onChange={e => setEditFormData({...editFormData, name: e.target.value})} className="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-400/20" required />
-                  <input type="email" value={editFormData.email} onChange={e => setEditFormData({...editFormData, email: e.target.value})} className="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-400/20" required />
-                  <select value={editFormData.role} onChange={e => setEditFormData({...editFormData, role: e.target.value})} className="w-full p-4 bg-gray-50 rounded-2xl outline-none font-bold">
-                    <option value="customer">CUSTOMER</option>
-                    <option value="admin">ADMIN</option>
-                  </select>
-                  <button type="submit" disabled={adminLoading} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg hover:bg-blue-700 transition-all uppercase tracking-widest disabled:opacity-50">
+
+                  {/* Tên & Email */}
+                  <div className="flex gap-4">
+                    <input type="text" value={editFormData.name} onChange={e => setEditFormData({...editFormData, name: e.target.value})} className="w-1/2 p-4 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-blue-400/20 text-sm" required placeholder="Họ và tên"/>
+                    <select value={editFormData.role} onChange={e => setEditFormData({...editFormData, role: e.target.value})} className="w-1/2 p-4 bg-gray-50 rounded-xl outline-none font-bold text-sm text-gray-600">
+                      <option value="customer">CUSTOMER</option>
+                      <option value="admin">ADMIN</option>
+                    </select>
+                  </div>
+                  <input type="email" value={editFormData.email} onChange={e => setEditFormData({...editFormData, email: e.target.value})} className="w-full p-4 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-blue-400/20 text-sm" required placeholder="Email"/>
+
+                  {/* 👉 KHU VỰC THAY ĐỔI MÃ RFID */}
+                  <div className="flex flex-col gap-2 p-4 bg-blue-50/50 rounded-xl border border-blue-100 mt-2">
+                    <label className="text-xs font-bold text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                      <IoIdCardOutline size={16} /> Liên kết thẻ RFID
+                    </label>
+                    <div className="flex items-center gap-3">
+                       <input
+                         type="text"
+                         value={isScanningEditRfid ? "Đang đợi thẻ..." : (editFormData.rfidCard || "Chưa có thẻ")}
+                         className={`flex-1 p-3 rounded-lg font-mono text-sm outline-none border transition-colors ${isScanningEditRfid ? 'bg-white text-blue-600 border-blue-300 animate-pulse' : 'bg-gray-100 text-gray-500 border-transparent'}`}
+                         readOnly
+                       />
+                       
+                       {/* Nút Hủy / Quét mới */}
+                       {isScanningEditRfid ? (
+                         <button type="button" onClick={() => setIsScanningEditRfid(false)} className="px-4 py-3 bg-red-100 text-red-600 rounded-lg font-bold text-sm hover:bg-red-200 transition-colors">
+                           Hủy
+                         </button>
+                       ) : (
+                         <button type="button" onClick={() => {
+                             dispatch(resetLastRfid());
+                             dispatch(clearBackendRfid()); // Xóa bộ nhớ đệm trước khi quét thẻ mới
+                             setIsScanningEditRfid(true);
+                         }} className="px-4 py-3 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors shadow-md whitespace-nowrap flex items-center gap-2">
+                            <IoRefreshOutline size={16}/> Cập nhật
+                         </button>
+                       )}
+                    </div>
+                  </div>
+
+                  <button type="submit" disabled={adminLoading || isScanningEditRfid} className="w-full py-4 mt-4 bg-black text-white rounded-xl font-bold shadow-lg hover:bg-gray-800 transition-all uppercase tracking-widest disabled:opacity-50">
                     {adminLoading ? "Đang lưu..." : "Lưu thay đổi"}
                   </button>
                 </form>

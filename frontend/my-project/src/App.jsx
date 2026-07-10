@@ -35,6 +35,8 @@ import AdminChatPage from "./components/Admin/AdminChatPage/AdminChatPage";
 import VisualSearchResult from "./pages/VisualSearchResult/VisualSearchResult";
 import SearchProductRFID from "./components/Admin/SearchProductRFID/SearchProductRFID";
 import VerifyEmail from "./components/Common/VerifyEmail/VerifyEmail";
+import AdminCartPage from './components/Admin/AdminCartPage/AdminCartPage';
+import AdminWareHousePage from './components/Admin/AdminWareHousePage/AdminWareHousePage';
 function App() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
@@ -90,6 +92,8 @@ function App() {
           <Route path="news/create" element={<CreateNewsPage />} />
           <Route path="news/:id/edit" element={<EditNewsPage />} />
           <Route path="chat" element={<AdminChatPage />} />
+          <Route path="cart" element={<AdminCartPage />} />
+          <Route path="warehouse" element={<AdminWareHousePage />} />
           <Route path="searchRFID" element={<SearchProductRFID />} />
         </Route>
       </Routes>

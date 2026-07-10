@@ -36,7 +36,7 @@ router.get("/", protect , admin , async(req, res)=>{
 
 // route post / api/ admin/ users
 router.post("/", protect, admin, upload.single("avatar"), async(req, res)=>{
-    const {name , email , password , role} = req.body
+    const {name , email , password , role, rfidCard} = req.body
     try {
         let user = await User.findOne({email})
         if(user){
@@ -54,7 +54,8 @@ router.post("/", protect, admin, upload.single("avatar"), async(req, res)=>{
             email, 
             password, // Nhớ đảm bảo password đã được băm trước khi save (trong Model User)
             role: role || "customer",
-            avatar: avatarUrl 
+            avatar: avatarUrl ,
+            rfidCard : rfidCard || null
         })
 
         await user.save()
@@ -63,6 +64,9 @@ router.post("/", protect, admin, upload.single("avatar"), async(req, res)=>{
     }
     catch(err){
         console.error(err)
+        if (err.code === 11000 && err.keyPattern && err.keyPattern.rfidCard) {
+            return res.status(400).json({message: "Mã thẻ RFID này đã được người khác sử dụng!"})
+        }
         res.status(500).json({message : "server error"})
     }
 })
@@ -90,12 +94,29 @@ router.put("/:id", protect, admin , upload.single("avatar"), async(req, res)=>{
             user.email = req.body.email || user.email
             user.role = req.body.role || user.role
 
+
+            if (req.body.rfidCard !== undefined) {
+                // Nếu FE gửi lên mã rỗng (tức là xóa thẻ), thì lưu null
+                user.rfidCard = req.body.rfidCard === "" ? null : req.body.rfidCard;
+            }
+
             if(req.file){
                 const cloudResult = await uploadToCloudinary(req.file.buffer);
                 user.avatar = cloudResult.secure_url
             }
             const userUpdate =  await user.save()
             res.json({message : "user updated successfully", user: userUpdate})
+       
+       try {
+                const userUpdate =  await user.save()
+                res.json({message : "user updated successfully", user: userUpdate})
+            } catch (saveErr) {
+                // Check lỗi nếu Admin cập nhật mã thẻ bị trùng với người khác
+                if (saveErr.code === 11000 && saveErr.keyPattern && saveErr.keyPattern.rfidCard) {
+                    return res.status(400).json({message: "Mã thẻ RFID này đã được liên kết với một tài khoản khác!"})
+                }
+                throw saveErr;
+            }
         }else{
             res.status(404).json({message : "user not found"})
         }

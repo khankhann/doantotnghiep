@@ -49,6 +49,19 @@ export const deleteProduct =createAsyncThunk("adminProducts/deleteProduct", asyn
 
 })
 
+export const generateProductQR = createAsyncThunk(
+  "adminProducts/generateProductQR", 
+  async({ id }) => {
+    const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/admin/products/${id}/generate-qr`, 
+    {}, 
+    {
+      headers: {
+        Authorization : `Bearer ${localStorage.getItem("userToken")}`
+      }
+    })  
+    return { id, qrCodeUrl: response.data.qrCodeUrl };
+  }
+)
 
 const adminProductSlice = createSlice({
   name : "adminProducts",
@@ -72,7 +85,7 @@ const adminProductSlice = createSlice({
       })
       // create product 
       .addCase(createProduct.fulfilled, (state, action)=>{
-        state.products = action.payload
+        state.products.push(action.payload)
       })
       // update product 
       .addCase(updateProduct.fulfilled , (state, action)=>{
@@ -83,6 +96,13 @@ const adminProductSlice = createSlice({
       })
       .addCase(deleteProduct.fulfilled, (state, action)=>{
         state.products = state.products.filter((product)=> product._id !== action.payload)
+      })
+      .addCase(generateProductQR.fulfilled, (state, action) => {
+        const index = state.products.findIndex((product) => product._id === action.payload.id)
+        if(index !== -1){
+          // Cập nhật link QR mới vào sản phẩm trong mảng
+          state.products[index].qrCodeUrl = action.payload.qrCodeUrl
+        }
       })
     } 
 })

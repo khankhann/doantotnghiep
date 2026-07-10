@@ -46,6 +46,42 @@ return id
 }
 })
 
+
+
+export const createPOSOrder = createAsyncThunk(
+  "adminOrders/createPOSOrder", 
+  async (orderData) => {
+    const response = await axios.post(
+      `${import.meta.env.VITE_BACKEND_URL}/api/admin/orders/pos`, 
+      orderData, 
+      {
+        headers: {
+          Authorization : `Bearer ${localStorage.getItem("userToken")}`
+        }
+      }
+    );
+    return response.data;
+  }
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const adminOrderSlice = createSlice({
     name : "adminOrders",
     initialState : {
@@ -90,6 +126,9 @@ const adminOrderSlice = createSlice({
         //  delete order 
          .addCase(deleteOrder.fulfilled , (state , action)=>{
             state.orders = state.orders.filter((order)=> order._id !== action.payload)
+         })
+         .addCase(createPOSOrder.fulfilled,(state, action)=>{
+            state.orders.unshift(action.payload)
          })
     }
 })

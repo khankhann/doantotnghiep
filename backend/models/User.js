@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema({
     required: true,
     minLength: 6,
   },
-  rfidCard: { type: String, required: false, unique: true },
+  rfidCard: { type: String, required: false, unique: true, sparse: true },
   role: {
     type: String,
     enum: ["customer", "admin"],

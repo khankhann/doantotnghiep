@@ -57,7 +57,11 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-    },
+    },  
+    qrCodeUrl: {
+    type: String,
+    default: "", 
+  },
     description: {
       type: String,
       required: true,

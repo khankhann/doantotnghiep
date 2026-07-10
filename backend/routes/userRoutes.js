@@ -75,11 +75,11 @@ router.post("/register", async (req, res) => {
       await sendEmail({ email: user.email, subject: "Xác thực tài khoản", html: message });
       res.status(200).json({ success: true, message: "Vui lòng kiểm tra Email để xác thực!" });
     } catch (error) {
-      // Nếu gửi mail lỗi, xóa luôn user vừa tạo (nếu là tạo mới) để tránh rác DB
-      // Hoặc đơn giản là báo lỗi để user bấm đăng ký lại
+      console.log("❌ LỖI GỬI MAIL CHI TIẾT:", error);
       return res.status(500).json({ message: "Lỗi gửi mail xác thực. Vui lòng thử lại!" });
     }
   } catch (err) {
+    console.log("❌ LỖI SERVER TỔNG:", err);
     res.status(500).json({ message: "Lỗi Server" });
   }
 });

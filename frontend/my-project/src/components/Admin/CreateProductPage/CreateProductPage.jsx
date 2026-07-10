@@ -28,7 +28,7 @@ function CreateProductPage() {
     material: "",
     gender: "",
     images: [],
-    rfid: "", 
+ 
   });
 
   const handleChange = (e) => {
@@ -243,37 +243,35 @@ function CreateProductPage() {
         </div>
 
         {/* CỘT PHẢI: KHU VỰC RFID & SUBMIT */}
-        <div className="w-full lg:w-1/3 space-y-6">
-           <div className="bg-white p-6 rounded-2xl shadow-sm border-2 border-blue-100 sticky top-8">
+       <div className="w-full lg:w-1/3 space-y-6">
+           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-8">
               <div className="flex flex-col items-center text-center">
-                 <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4">
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-                 </div>
-                 <h3 className="text-xl font-bold text-gray-900 mb-2">Quẹt thẻ RFID</h3>
-                 <p className="text-sm text-gray-500 mb-6">Click vào ô bên dưới, sau đó dùng máy quét để quét thẻ sản phẩm.</p>
                  
-                 <div className="w-full relative">
-                    <input 
-                      type="text" 
-                      name="rfid" 
-                      value={productData.rfid} 
-                      onChange={handleChange}
-                      onKeyDown={handleRFIDKeyDown}
-                      placeholder="Mã RFID sẽ hiện ở đây..." 
-                      className="w-full border-2 border-blue-200 rounded-xl p-4 text-center font-mono text-lg font-bold text-blue-700 bg-blue-50/50 focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all placeholder:font-sans placeholder:text-sm placeholder:font-normal"
-                    />
-                    {productData.rfid && (
-                       <span className="absolute right-3 top-1/2 -translate-y-1/2 flex h-3 w-3">
-                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                         <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                       </span>
-                    )}
+                 {/* Icon tiêu đề */}
+                 <div className="w-16 h-16 bg-gray-50 text-gray-800 rounded-2xl flex items-center justify-center mb-4 border border-gray-200">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                    </svg>
                  </div>
-                 {productData.rfid && <p className="text-xs text-green-600 font-bold mt-3">Đã gán mã thẻ thành công!</p>}
+                 
+                 <h3 className="text-xl font-bold text-gray-900 mb-2">Mã QR Sản Phẩm</h3>
+                 <p className="text-sm text-gray-500 mb-6 px-2">Hệ thống sẽ tự động tạo mã QR thông minh sau khi bạn bấm lưu sản phẩm.</p>
+                 
+                 {/* KHUNG MÔ PHỎNG QR CODE (Placeholder) */}
+                 <div className="relative w-48 h-48 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-gray-50 mb-4 overflow-hidden group">
+                    <svg className="w-16 h-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm13 0h3v3h-3v-3zm-3 3h3v3h-3v-3zm3 3h3v3h-3v-3z" />
+                    </svg>
+                    {/* Hiệu ứng quét vạch ngang cho đẹp */}
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gray-400 to-transparent opacity-30 animate-[bounce_2s_infinite]"></div>
+                 </div>
+                 
+                 <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Sẵn sàng khởi tạo</p>
               </div>
 
               <hr className="my-6 border-gray-100" />
 
+              {/* Nút bấm giữ nguyên */}
               <button
                 type="submit"
                 className="w-full bg-gray-900 text-white font-bold py-4 rounded-xl hover:bg-black active:scale-[0.98] transition-all shadow-lg shadow-gray-900/20 text-lg flex justify-center items-center gap-2"

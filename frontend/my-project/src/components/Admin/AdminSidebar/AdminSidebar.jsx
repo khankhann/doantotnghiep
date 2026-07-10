@@ -8,6 +8,8 @@ import {
   FaSignOutAlt,
 } from "react-icons/fa";
 import { RiMessage2Fill } from "react-icons/ri";
+import { FaWarehouse } from "react-icons/fa";
+import { FaCashRegister } from "react-icons/fa6";
 import { BsPostcard } from "react-icons/bs";
 import { IoScanOutline } from "react-icons/io5"; // 🔥 Import icon máy quét
 
@@ -33,12 +35,15 @@ function AdminSidebar() {
   };
 
   const navItems = [
-    { path: "/admin/users", name: "Quản lý Users", icon: <FaUser size={18} /> },
-    { path: "/admin/products", name: "Quản lý Products", icon: <FaBoxOpen size={18} /> },
-    { path: "/admin/orders", name: "Quản lý Orders", icon: <FaClipboardList size={18} /> },
-    { path: "/admin/news", name: "Quản lý Bài viết", icon: <BsPostcard size={18} /> },
+    { path: "/admin/users", name: "Quản lý tài khoản", icon: <FaUser size={18} /> },
+    { path: "/admin/products", name: "Quản lý sản phẩm", icon: <FaBoxOpen size={18} /> },
+    { path: "/admin/orders", name: "Quản lý đơn hàng", icon: <FaClipboardList size={18} /> },
+    { path: "/admin/news", name: "Quản lý bài viết", icon: <BsPostcard size={18} /> },
     { path: "/admin/chat", name: "Quản lý tin nhan", icon: <RiMessage2Fill size={18} /> },
-    { path: "/", name: "Về trang Shop", icon: <FaStore size={18} /> },
+    { path: "/admin/cart", name: "Thanh toán", icon: <FaCashRegister size={18} /> },
+    {path: "/admin/warehouse", name: "Giám sát kho ", icon: <FaWarehouse size={18} />},
+
+    { path: "/", name: "Về trang chủ", icon: <FaStore size={18} /> },
   ];
 
   return (

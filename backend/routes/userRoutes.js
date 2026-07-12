@@ -5,6 +5,8 @@ const { protect } = require("../middleware/authMiddleware");
 const router = express.Router();
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
+const bcrypt = require('bcryptjs'); // Đảm bảo đã import thư viện mã hóa
+
 
 // MỚI THÊM: Import crypto và hàm gửi mail
 const crypto = require("crypto");
@@ -223,6 +225,44 @@ router.put('/profile', protect, upload.single('avatar'), async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: "Cập nhật thất bại!" });
     }
+});
+// Route: POST /api/users/verify-access
+// ==========================================
+router.post('/verify-access', async (req, res) => {
+  try {
+    const { authRfid, password, userId } = req.body;
+
+    // 1. Tìm thông tin Admin đang đăng nhập
+    const adminUser = await User.findById(userId);
+    if (!adminUser) return res.status(404).json({ message: "Không tìm thấy tài khoản!" });
+    
+    // Đảm bảo chỉ Admin mới có quyền qua cửa
+    if (adminUser.role !== 'admin') {
+      return res.status(403).json({ message: "Bạn không có quyền truy cập khu vực này!" });
+    }
+
+    // 2. Kịch bản A: Xác thực bằng Thẻ RFID
+    if (authRfid) {
+      if (adminUser.rfidCard !== authRfid) {
+        return res.status(401).json({ message: "Thẻ RFID không khớp với tài khoản Admin của bạn!" });
+      }
+      return res.status(200).json({ message: "Xác thực RFID thành công" });
+    }
+
+    // 3. Kịch bản B: Xác thực bằng Mật khẩu
+    if (password) {
+      const isMatch = await bcrypt.compare(password, adminUser.password);
+      if (!isMatch) {
+        return res.status(401).json({ message: "Mật khẩu không chính xác!" });
+      }
+      return res.status(200).json({ message: "Xác thực mật khẩu thành công" });
+    }
+
+    res.status(400).json({ message: "Thiếu thông tin xác thực" });
+
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  }
 });
 
 module.exports = router;

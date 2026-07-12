@@ -14,6 +14,7 @@ import chatReducer from "@redux/slices/chatSlice"
 import adminChatReducer from "@redux/slices/adminChatSlice"
 import visualSearchReducer from "@redux/slices/visualSearchSlice"
 import iotSensorReducer from "@redux/slices/iotSensorSlice"
+import categoryReducer from "@redux/slices/categorySlice" 
 const store = configureStore({
     reducer : {
         auth : authReducer,
@@ -30,7 +31,8 @@ const store = configureStore({
         chat : chatReducer,
         adminChat : adminChatReducer,
         visualSearch : visualSearchReducer,
-        iotSensor : iotSensorReducer
+        iotSensor : iotSensorReducer,
+        categories: categoryReducer,
     }
 }) 
 export default store;   

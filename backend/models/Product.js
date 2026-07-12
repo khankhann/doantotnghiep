@@ -1,55 +1,67 @@
 const mongoose = require("mongoose");
+
 const replySchema = new mongoose.Schema({
-  user : {
+  user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref : "User",
+    ref: "User",
     required: true
   },
-  name : {
-    type  : String,
+  name: {
+    type: String,
     required: true 
   },
-  comment : {
-    type : String , 
+  comment: {
+    type: String, 
     required: true
   },
-  isAdmin : {
-    type : Boolean,
-    default : false
+  isAdmin: {
+    type: Boolean,
+    default: false
   }
-},{
+}, {
   timestamps: true
-})
-
-
-
-
+});
 
 const reviewSchema = new mongoose.Schema({
-  user : {
-    type : mongoose.Schema.Types.ObjectId,
-    ref : "User",
-    required : true 
-  },
-  name : {
-    type : String,
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
     required: true 
   },
- replies : [replySchema],
-  rating : {
-    type : Number , 
-    required : true 
+  name: {
+    type: String,
+    required: true 
+  },
+  replies: [replySchema],
+  rating: {
+    type: Number, 
+    required: true 
   }, 
-    comment : {
-      type : String, 
-      required : true
-    }
-  
-},{
-  timestamps : true
-})
+  comment: {
+    type: String, 
+    required: true
+  }
+}, {
+  timestamps: true
+});
 
+// ==========================================
+// 🔥 THÊM MỚI 1: Schema quản lý Kho Phân loại (Variants)
+// ==========================================
+const variantSchema = new mongoose.Schema({
+  variantName: { type: String, required: true }, // VD: "Size XL - Màu Đen"
+  stock: { type: Number, required: true, default: 0 }, // Số lượng kho riêng của loại này
+  price: { type: Number }, // Tùy chọn: Nhập nếu size này bán đắt/rẻ hơn giá gốc
+  sku: { type: String } // Tùy chọn: Mã vạch riêng của loại này
+});
 
+// ==========================================
+// 🔥 THÊM MỚI 2: Schema thuộc tính động (Attributes - Thay cho colors, sizes cũ)
+// ==========================================
+const attributeSchema = new mongoose.Schema({
+  name: { type: String, required: true }, // VD: "Size", "Màu sắc", "Giới tính", "RAM"
+  value: { type: String, required: true } // VD: "XL", "Đỏ", "Nam", "8GB"
+});
 
 const productSchema = new mongoose.Schema(
   {
@@ -59,9 +71,18 @@ const productSchema = new mongoose.Schema(
       trim: true,
     },  
     qrCodeUrl: {
-    type: String,
-    default: "", 
-  },
+      type: String,
+      default: "", 
+    },
+    stockHistory: [
+    {
+      action: { type: String, enum: ['IMPORT', 'EXPORT'] }, // Đổi 'type' thành 'action'
+      amount: { type: Number },
+      note: { type: String },
+      userName: { type: String },
+      date: { type: Date, default: Date.now }
+    }
+  ],
     description: {
       type: String,
       required: true,
@@ -77,6 +98,7 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // Tổng số lượng kho (Sẽ bằng tổng các variant.stock cộng lại)
     countInStock: {
       type: Number,
       required: true,
@@ -87,37 +109,27 @@ const productSchema = new mongoose.Schema(
       unique: true,
       required: true,
     },
+    
+    // 👉 ĐÃ FIX: Đổi từ String sang ObjectId để hết lỗi CastError và hỗ trợ đa tầng
     category: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
       required: true,
     },
+    
     brand: {
       type: String,
       required: true,
     },
-    sizes: {
-      type: [String],
-      required: true,
-    },
-    colors: {
-      type: [String],
-      required: true,
-    },
-    collections: {
-      type: String,
-      required: false,
-    },
-    material: {
-      type: String,
-    },
-    gender: {
-      type: String,
-      enum: ["Men", "Women", "Unisex"],
-    },
-    suitableForBodyType: {
-      type: [String], // Ví dụ: ["Slim", "Fit", "Plus-size"]
-      default: ["Fit"],
-    },
+
+    // 👉 ĐÃ THÊM: Mảng chứa thông số kỹ thuật (Để khách Filter)
+    attributes: [attributeSchema],
+
+    // 👉 ĐÃ THÊM: Mảng chứa Phân loại kho (Biết chính xác có bao nhiêu cái XL, L)
+    variants: [variantSchema],
+
+    // (ĐÃ XÓA: sizes, colors, collections, material, gender, suitableForBodyType)
+
     images: [
       {
         url: {
@@ -137,7 +149,7 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    reviews : [reviewSchema],
+    reviews: [reviewSchema],
     rating: {
       type: Number,
       default: 0,
@@ -155,7 +167,8 @@ const productSchema = new mongoose.Schema(
     lastEditByUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      // Tạm thời bỏ required: true để khỏi lỗi khi create nếu frontend quên gửi
+      required: false, 
     },
     metaTitle: {
       type: String,
@@ -173,7 +186,7 @@ const productSchema = new mongoose.Schema(
     },
     weight: Number,
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 module.exports = mongoose.model("Product", productSchema);

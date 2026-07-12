@@ -23,6 +23,7 @@ const newsRoutes = require("./routes/newsRoutes")
 const reviewsRoutes = require("./routes/reviewsRoutes")
 const aiRoutes = require("./routes/aiRoutes")
 const iotRoutes = require("./routes/iotSensorRoutes")
+const categoryRoutes = require("./routes/categoryRoutes");
 
 
 dotenv.config();
@@ -77,11 +78,14 @@ app.use("/api/checkout", checkoutRoutes)
 app.use("/api/orders", orderRoutes)
 app.use("/api/upload", uploadRoutes)
 app.use("/api/subscribe", subscribeRoutes)
+app.use("/api/categories", categoryRoutes);
+
 app.use("/api/momo", momoRoutes)
 // admin 
 app.use("/api/admin/users", adminRoutes)
 app.use("/api/admin/products", productAdminRoutes)
 app.use("/api/admin/orders", orderAdminRoutes)
+
 // notification 
 app.use("/api/notifications", notificationRoutes)
 // ai recommend

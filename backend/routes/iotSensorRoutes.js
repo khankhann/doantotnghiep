@@ -21,8 +21,7 @@ let latestSensorData = {
     updatedAt: null
 };
 
-// 🔥 2.1 BỘ NHỚ TẠM RFID (MỚI THÊM)
-// Biến này lưu mã thẻ vừa quẹt để React "bốc" về form đăng ký
+// 🔥 2.1 BỘ NHỚ TẠM RFID 
 let latestRfidTag = {
     tag: null,
     type: null,
@@ -30,9 +29,16 @@ let latestRfidTag = {
     scannedAt: 0
 };
 
+// 🔥 2.2 BỘ NHỚ TẠM ĐIỀU KHIỂN (MỚI THÊM)
+// Biến này lưu trạng thái công tắc trên Web để ESP32 đọc
+let iotControlState = {
+    fireSystem: true,
+    securitySystem: true
+};
+
 // 3. HÀM BẮN THÔNG BÁO DISCORD
 const sendDiscordAlert = async (temp, hum) => {
-    const webhookUrl = process.env.DISCORD_WEBHOOK_URL; ; 
+    const webhookUrl = process.env.DISCORD_WEBHOOK_URL; 
     try {
         await axios.post(webhookUrl, {
             content: ` **BÁO ĐỘNG KHO HÀNG** \nNhiệt độ: **${temp}°C**\n Độ ẩm: **${hum}%**`
@@ -87,47 +93,31 @@ router.post("/sensor", async(req, res) => {
 });
 
 // ==========================================
-// 🔥 API 1.2: ESP32 GỬI MÃ THẺ RFID (POST) - MỚI THÊM
+// 🔥 API 1.2: ESP32 GỬI MÃ THẺ RFID (POST)
 // ==========================================
 router.post("/rfid/scan", async (req, res) => {
-    const { rfidTag } = req.body;
+    // Đã fix lỗi khai báo const thành let để có thể gán lại chuỗi
+    let { rfidTag } = req.body;
     if (!rfidTag) return res.status(400).json({ message: "Không tìm thấy mã thẻ!" });
-rfidTag = rfidTag.toString().trim();
+    
+    rfidTag = rfidTag.toString().trim();
+    
     try {
-        // 1. TÌM SONG SONG TRONG CẢ 2 BẢNG (USER VÀ PRODUCT)
         const [user, product] = await Promise.all([
             User.findOne({ rfidCard: rfidTag }).select("-password"),
             Product.findOne({ rfidCard: rfidTag })
         ]);
 
-        // 2. PHÂN LOẠI KẾT QUẢ VÀ LƯU VÀO BỘ NHỚ TẠM
         if (user) {
-            latestRfidTag = {
-                tag: rfidTag,
-                type: "USER",      // Dán nhãn đây là thẻ User
-                data: user,        // Nhét data User vào
-                scannedAt: Date.now()
-            };
+            latestRfidTag = { tag: rfidTag, type: "USER", data: user, scannedAt: Date.now() };
             console.log(`[RFID] Đã tìm thấy USER: ${user.name}`);
         } 
         else if (product) {
-            latestRfidTag = {
-                tag: rfidTag,
-                type: "PRODUCT",   // Dán nhãn đây là thẻ Product
-                data: product,     // Nhét data Product vào
-                scannedAt: Date.now()
-            };
+            latestRfidTag = { tag: rfidTag, type: "PRODUCT", data: product, scannedAt: Date.now() };
             console.log(`[RFID] Đã tìm thấy PRODUCT: ${product.name}`);
         } 
         else {
-            // Quét thẻ rác không có trong DB
-            latestRfidTag = {
-                tag: rfidTag,
-                type: "UNKNOWN",
-                data: null,
-                scannedAt: Date.now(),
-                error: "Thẻ này chưa được đăng ký trong hệ thống!"
-            };
+            latestRfidTag = { tag: rfidTag, type: "UNKNOWN", data: null, scannedAt: Date.now(), error: "Thẻ này chưa được đăng ký trong hệ thống!" };
             console.log(`[RFID] Thẻ vô danh: ${rfidTag}`);
         }
 
@@ -146,11 +136,10 @@ router.get("/data", (req, res) => {
 });
 
 // ==========================================
-// 🔥 API 2.2: FRONTEND LẤY MÃ THẺ RFID MỚI NHẤT (GET) - MỚI THÊM
+// 🔥 API 2.2: FRONTEND LẤY MÃ THẺ RFID MỚI NHẤT (GET)
 // ==========================================
 router.get("/rfid/latest", (req, res) => {
     try {
-        // Nếu chưa từng quẹt thẻ lần nào (scannedAt = 0)
         if (!latestRfidTag.scannedAt) {
             return res.status(200).json({ rfidTag: null });
         }
@@ -172,14 +161,13 @@ router.get("/rfid/latest", (req, res) => {
         res.status(500).json({ message: "Lỗi Server" });
     }
 });
+
 router.delete("/rfid/clear", (req, res) => {
-    latestRfidTag = {
-        tag: null,
-        scannedAt: null
-    };
+    latestRfidTag = { tag: null, scannedAt: null };
     console.log("[RFID] Đã dọn dẹp bộ nhớ thẻ tạm.");
     res.status(200).json({ message: "Đã xóa mã thẻ tạm thành công!" });
 });
+
 // ==========================================
 // 📌 API 3: FRONTEND LẤY LỊCH SỬ (GET)
 // ==========================================
@@ -205,6 +193,27 @@ router.get("/history", async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: "Lỗi Server" });
     }
+});
+
+// ==========================================
+// 🚀 API 4: FRONTEND GỬI LỆNH ĐIỀU KHIỂN (POST)
+// ==========================================
+router.post("/control", (req, res) => {
+    const { fireSystem, securitySystem } = req.body;
+    
+    // Cập nhật trạng thái nếu Frontend gửi lên
+    if (fireSystem !== undefined) iotControlState.fireSystem = fireSystem;
+    if (securitySystem !== undefined) iotControlState.securitySystem = securitySystem;
+    
+    console.log(`[IOT CONTROL] Hệ thống cháy: ${iotControlState.fireSystem ? 'ON' : 'OFF'} | An ninh: ${iotControlState.securitySystem ? 'ON' : 'OFF'}`);
+    res.status(200).json({ message: "Đã cập nhật lệnh điều khiển", state: iotControlState });
+});
+
+// ==========================================
+// 🚀 API 5: ESP32 HỎI LỆNH ĐIỀU KHIỂN (GET)
+// ==========================================
+router.get("/control", (req, res) => {
+    res.status(200).json(iotControlState);
 });
 
 module.exports = router;

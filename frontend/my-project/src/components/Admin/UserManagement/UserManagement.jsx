@@ -4,10 +4,9 @@ import { addUser, deleteUser, fetchUsers, updateUser } from "@redux/slices/admin
 import { updateCurrentUser } from "@redux/slices/authSlice";
 import { fetchLastRfid, resetLastRfid, clearBackendRfid } from "@redux/slices/iotSensorSlice";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   IoSearchOutline, IoTrashOutline, IoCameraOutline, IoIdCardOutline, 
-  IoCreateOutline, IoCloseOutline, IoLockClosedOutline, IoFilterOutline, IoPersonAddOutline, IoRefreshOutline
+  IoCreateOutline, IoCloseOutline, IoLockClosedOutline, IoPersonAddOutline, IoRefreshOutline
 } from "react-icons/io5";
 
 function UserManagement() {
@@ -27,66 +26,72 @@ function UserManagement() {
   const [rfidValue, setRfidValue] = useState("");
   const rfidInputRef = useRef(null);
 
-  // 👉 STATE MỚI: Dành riêng cho Modal Chỉnh Sửa
   const [editingUser, setEditingUser] = useState(null);
   const [editFormData, setEditFormData] = useState({ name: "", email: "", role: "", rfidCard: "" });
   const [editAvatarPreview, setEditAvatarPreview] = useState(null);
   const [editAvatarFile, setEditAvatarFile] = useState(null);
-  const [isScanningEditRfid, setIsScanningEditRfid] = useState(false); // Trạng thái đang quét thẻ ở form Edit
+  const [isScanningEditRfid, setIsScanningEditRfid] = useState(false);
 
+  // 👉 CẤU HÌNH MODAL XÁC THỰC (Cho phép nhập cả Thẻ và Password)
   const [authModalConfig, setAuthModalConfig] = useState({ isOpen: false, actionType: null, targetUserId: null, pendingData: null });
+  const [authScannedRfid, setAuthScannedRfid] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
 
   useEffect(() => {
     if (user?.role === "admin") { dispatch(fetchUsers()); }
   }, [dispatch, user]);
 
-  // 🔥 NÂNG CẤP LOGIC LẮNG NGHE RFID CHUNG CHO CẢ 2 FORM
+  // LẮNG NGHE THẺ RFID
   useEffect(() => {
     let interval;
-    // Bật máy quét nếu Modal Tạo Mới đang mở HOẶC bấm nút Quét ở Modal Edit
-    if (rfidModalOpen || isScanningEditRfid) {
+    if (rfidModalOpen || isScanningEditRfid || authModalConfig.isOpen) {
       interval = setInterval(() => { dispatch(fetchLastRfid()); }, 1000);
       if (rfidModalOpen && rfidInputRef.current) rfidInputRef.current.focus();
     } else {
-      // Khi không quét nữa thì dọn dẹp bộ nhớ
       dispatch(resetLastRfid());     
       dispatch(clearBackendRfid());  
       if (!rfidModalOpen) setRfidValue(""); 
+      if (!authModalConfig.isOpen) {
+        setAuthScannedRfid("");
+        setAdminPassword("");
+      }
     }
     return () => clearInterval(interval);
-  }, [rfidModalOpen, isScanningEditRfid, dispatch]);
+  }, [rfidModalOpen, isScanningEditRfid, authModalConfig.isOpen, dispatch]);
 
-  // 🔥 XỬ LÝ KHI NHẬN ĐƯỢC MÃ THẺ
+  // XỬ LÝ NHẬN THẺ
   useEffect(() => {
     if (lastRfid) {
       if (rfidModalOpen) {
-        // Đang ở form Tạo Mới
         setRfidValue(lastRfid);
-        toast.success("Đã nhận diện thẻ RFID!");
+        toast.success("Đã nhận diện mã thẻ!");
       } else if (isScanningEditRfid) {
-        // Đang ở form Chỉnh Sửa
         setEditFormData(prev => ({ ...prev, rfidCard: lastRfid }));
-        setIsScanningEditRfid(false); // Quét xong tự động tắt chế độ quét
-        toast.success("Đã cập nhật mã thẻ mới!");
+        setIsScanningEditRfid(false);
+        toast.success("Đã cập nhật mã thẻ cho User!");
+      } else if (authModalConfig.isOpen) {
+        setAuthScannedRfid(lastRfid);
+        // Tự động clear password nếu người dùng quét thẻ
+        setAdminPassword(""); 
+        toast.success("Đã quét thẻ xác thực!");
       }
     }
-  }, [lastRfid, rfidModalOpen, isScanningEditRfid]);
+  }, [lastRfid, rfidModalOpen, isScanningEditRfid, authModalConfig.isOpen]);
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setAvatarPreview(URL.createObjectURL(file));
-      setAvatarFile(file);
-    }
+    if (file) { setAvatarPreview(URL.createObjectURL(file)); setAvatarFile(file); }
   };
 
   const handleInitiateCreate = (e) => {
     e.preventDefault();
     const { name, email, password } = formData;
-    if(!name || !email || !password) return toast.error("Điền đủ thông tin đã fen!");
+    if(!name || !email || !password) return toast.error("Vui lòng điền đủ thông tin!");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast.error("Email sai định dạng!");
     if (password.length < 6) return toast.error("Mật khẩu ít nhất 6 ký tự!");
+    
+    dispatch(resetLastRfid());
+    dispatch(clearBackendRfid());
     setRfidModalOpen(true);
   };
 
@@ -101,31 +106,29 @@ function UserManagement() {
 
     dispatch(addUser(submitData)).then((res) => {
       if (!res.error) {
-        toast.success("Tạo user thành công!");
+        toast.success("Tạo người dùng thành công!");
         dispatch(resetLastRfid());
         setFormData({ name: "", email: "", password: "", role: "customer" });
         setAvatarPreview(null);
         setRfidModalOpen(false);
         setRfidValue("");
       } else {
-        const errorMsg = res.payload?.message || res.payload || "Có lỗi xảy ra!";
-        toast.error(errorMsg);
+        toast.error(res.payload?.message || res.payload || "Có lỗi xảy ra!");
       }
     });
   };
 
   const handleEditClick = (userData) => {
     setEditingUser(userData);
-    // 👉 Đổ dữ liệu cũ vào (bao gồm cả rfidCard)
     setEditFormData({ 
       name: userData.name, 
       email: userData.email, 
       role: userData.role,
-      rfidCard: userData.rfidCard || "" // Tránh lỗi null nếu user cũ chưa có thẻ
+      rfidCard: userData.rfidCard || "" 
     });
     setEditAvatarPreview(userData.avatar || null);
     setEditAvatarFile(null);
-    setIsScanningEditRfid(false); // Reset trạng thái quét
+    setIsScanningEditRfid(false);
   };
 
   const handleEditSubmit = (e) => {
@@ -135,32 +138,45 @@ function UserManagement() {
     updateData.append("name", editFormData.name);
     updateData.append("email", editFormData.email);
     updateData.append("role", editFormData.role);
-    // 👉 Đóng gói mã RFID mới (nếu có) để gửi lên server
     updateData.append("rfidCard", editFormData.rfidCard);
-    
     if (editAvatarFile) updateData.append("avatar", editAvatarFile);
     
+    dispatch(resetLastRfid());
+    dispatch(clearBackendRfid());
     setAuthModalConfig({ isOpen: true, actionType: "edit", targetUserId: editingUser._id, pendingData: updateData });
   };
 
   const executeSecureAction = async (e) => {
     e.preventDefault();
+    
+    // Phải có 1 trong 2: Quẹt thẻ HOẶC Nhập mật khẩu
+    if (!authScannedRfid && !adminPassword) {
+      return toast.error("Vui lòng quẹt thẻ hoặc nhập mật khẩu để xác thực!");
+    }
+
     const { actionType, targetUserId, pendingData } = authModalConfig;
+    
     try {
       if (actionType === "delete") {
-        await dispatch(deleteUser({id : targetUserId, currentPassword: adminPassword})).unwrap();
+        await dispatch(deleteUser({ 
+          id: targetUserId, 
+          authRfid: authScannedRfid || undefined, 
+          currentPassword: adminPassword || undefined 
+        })).unwrap();
         toast.success("Đã xóa thành công!");
       } else {
-        pendingData.set("currentPassword", adminPassword);
+        if (authScannedRfid) pendingData.append("authRfid", authScannedRfid);
+        if (adminPassword) pendingData.append("currentPassword", adminPassword);
+        
         const result = await dispatch(updateUser(pendingData)).unwrap();
         if (result._id === user._id) dispatch(updateCurrentUser(result));
         toast.success("Cập nhật thành công!");
         setEditingUser(null);
         dispatch(fetchUsers());
       }
-      setAuthModalConfig({ ...authModalConfig, isOpen: false }); setAdminPassword("");
+      setAuthModalConfig({ isOpen: false, actionType: null, targetUserId: null, pendingData: null }); 
     } catch (err) { 
-      toast.error(err?.payload || "Xác thực Admin thất bại!"); 
+      toast.error(err?.payload || "Xác thực thất bại! Kiểm tra lại mật khẩu hoặc thẻ."); 
     }
   };
 
@@ -169,84 +185,120 @@ function UserManagement() {
     .sort((a, b) => a.name?.localeCompare(b.name));
 
   return (
-    <div className="relative min-h-screen p-4 sm:p-8 bg-[#fdfdfd]">
-      <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-[-5%] left-[-5%] w-[400px] h-[400px] bg-blue-100/40 rounded-full blur-[100px]" />
-        <div className="absolute bottom-[-5%] right-[-5%] w-[400px] h-[400px] bg-pink-100/40 rounded-full blur-[100px]" />
-      </div>
-
+    <div className="min-h-screen p-6 bg-gray-50 text-gray-800 font-sans">
       <div className="max-w-7xl mx-auto">
-        <header className="mb-10">
-          <h2 className="text-3xl font-black tracking-tighter uppercase italic">User Control Center</h2>
-        </header>
+        
+        {/* HEADER */}
+        <div className="mb-6 border-b border-gray-200 pb-4">
+          <h2 className="text-2xl font-bold text-gray-900">Quản lý Người dùng</h2>
+          <p className="text-sm text-gray-500 mt-1">Hệ thống cấp quyền và quản lý tài khoản</p>
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
           {/* CỘT TRÁI: FORM ĐĂNG KÝ */}
           <div className="lg:col-span-4 order-2 lg:order-1">
-            <div className="bg-white/70 backdrop-blur-xl border border-white p-8 rounded-[2rem] shadow-xl sticky top-8">
-              <div className="flex items-center gap-3 mb-8">
-                <IoPersonAddOutline className="text-blue-600" size={24}/>
-                <h3 className="text-lg font-bold">Thêm Thành Viên</h3>
+            <div className="bg-white p-6 rounded-sm shadow-sm border border-gray-200 sticky top-6">
+              <div className="flex items-center gap-2 mb-6 border-b border-gray-100 pb-4">
+                <IoPersonAddOutline className="text-blue-600" size={20}/>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-gray-800">Thêm Thành Viên Mới</h3>
               </div>
-              <form onSubmit={handleInitiateCreate} className="space-y-5">
+              <form onSubmit={handleInitiateCreate} className="space-y-4">
                 <div className="flex justify-center mb-4">
                   <label className="relative cursor-pointer group">
-                    <div className="w-24 h-24 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-white hover:border-blue-500 transition-all">
-                      {avatarPreview ? <img src={avatarPreview} className="w-full h-full object-cover" /> : <IoCameraOutline size={30} className="text-gray-300" />}
+                    <div className="w-20 h-20 rounded-sm border border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50 hover:border-blue-500 transition-colors">
+                      {avatarPreview ? <img src={avatarPreview} className="w-full h-full object-cover" /> : <IoCameraOutline size={24} className="text-gray-400" />}
                     </div>
                     <input type="file" className="hidden" accept="image/*" onChange={handleAvatarChange} />
                   </label>
                 </div>
-                <input type="text" placeholder="Họ và tên" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-4 bg-white/80 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-400/30" required />
-                <input type="email" placeholder="Email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full p-4 bg-white/80 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-400/30" required />
-                <input type="password" placeholder="Mật khẩu (6+ ký tự)" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full p-4 bg-white/80 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-400/30" required />
-                <button type="submit" disabled={adminLoading} className="w-full py-4 bg-black text-white rounded-2xl font-bold hover:bg-gray-800 transition-all uppercase tracking-widest disabled:opacity-50">
-                  {adminLoading ? "Đang xử lý..." : "Tiếp tục quẹt thẻ"}
+                
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Họ và tên</label>
+                  <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-2.5 bg-white border border-gray-300 rounded-sm outline-none focus:border-blue-500 text-sm" required />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Email</label>
+                  <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full p-2.5 bg-white border border-gray-300 rounded-sm outline-none focus:border-blue-500 text-sm" required />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Mật khẩu</label>
+                  <input type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full p-2.5 bg-white border border-gray-300 rounded-sm outline-none focus:border-blue-500 text-sm" required />
+                </div>
+                
+                <button type="submit" disabled={adminLoading} className="w-full py-2.5 mt-2 bg-blue-600 text-white rounded-sm font-bold hover:bg-blue-700 transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+                  Tiếp tục gắn thẻ RFID
                 </button>
               </form>
             </div>
           </div>
 
           {/* CỘT PHẢI: DANH SÁCH */}
-          <div className="lg:col-span-8 order-1 lg:order-2 space-y-6">
-            <div className="flex bg-white/60 backdrop-blur-md p-2 rounded-2xl border border-white shadow-sm">
-                <IoSearchOutline className="my-auto ml-4 text-gray-400" size={20} />
-                <input type="text" placeholder="Tìm tên/email..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="flex-1 p-3 bg-transparent outline-none" />
-                <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="bg-transparent font-bold text-[10px] px-4 uppercase outline-none border-l border-gray-200">
-                    <option value="all">Tất cả</option>
-                    <option value="admin">Admin</option>
-                    <option value="customer">User</option>
+          <div className="lg:col-span-8 order-1 lg:order-2 space-y-4">
+            
+            {/* Thanh tìm kiếm */}
+            <div className="flex items-center bg-white p-3 rounded-sm border border-gray-200 shadow-sm gap-2">
+                <IoSearchOutline className="text-gray-400 ml-2" size={18} />
+                <input type="text" placeholder="Tìm tên/email..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="flex-1 p-2 text-sm bg-transparent outline-none" />
+                <div className="h-6 w-px bg-gray-200 mx-2"></div>
+                <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="bg-transparent font-bold text-xs uppercase outline-none text-gray-600 cursor-pointer pr-2">
+                    <option value="all">Tất cả vai trò</option>
+                    <option value="admin">Quản trị viên</option>
+                    <option value="customer">Người dùng</option>
                 </select>
             </div>
 
-            <div className="bg-white/70 backdrop-blur-xl border border-white rounded-[2.5rem] overflow-hidden shadow-sm">
+            {/* Bảng dữ liệu */}
+            <div className="bg-white rounded-sm border border-gray-200 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left min-w-[600px]">
-                  <thead>
-                    <tr className="border-b border-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                      <th className="p-6">User</th>
-                      <th className="p-6">Vai trò</th>
-                      <th className="p-6 text-right">Hành động</th>
+                <table className="w-full text-left whitespace-nowrap">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr className="text-[10px] font-bold text-gray-500 uppercase">
+                      <th className="px-6 py-4">Người dùng</th>
+                      <th className="px-6 py-4 text-center">Phân quyền</th>
+                      <th className="px-6 py-4 text-right">Thao tác</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-gray-100">
                     {processedUsers.map(u => (
-                      <tr key={u._id} className="group hover:bg-white/50 transition-all">
-                        <td className="p-6 flex items-center gap-4">
-                          <div className="w-11 h-11 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center overflow-hidden font-bold">
+                      <tr key={u._id} className="hover:bg-gray-50 transition-colors group">
+                        <td className="px-6 py-4 flex items-center gap-3">
+                          <div className="w-9 h-9 bg-gray-100 rounded-sm border border-gray-200 flex items-center justify-center overflow-hidden font-bold text-gray-500">
                             {u.avatar ? <img src={u.avatar} className="w-full h-full object-cover"/> : u.name.charAt(0)}
                           </div>
-                          <div><p className="font-bold text-sm">{u.name}</p><p className="text-[10px] text-gray-400">{u.email}</p></div>
+                          <div>
+                            <p className="font-bold text-sm text-gray-800">{u.name}</p>
+                            <p className="text-xs text-gray-500">{u.email}</p>
+                          </div>
                         </td>
-                        <td className="p-6"><span className={`px-3 py-1 rounded-full text-[10px] font-black ${u.role === 'admin' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>{u.role.toUpperCase()}</span></td>
-                        <td className="p-6 text-right">
-                          <div className="flex justify-end gap-2 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => handleEditClick(u)} className="p-2.5 bg-white rounded-xl text-amber-500 shadow-sm border border-gray-50 hover:scale-110 transition-transform"><IoCreateOutline size={18}/></button>
-                            <button onClick={() => setAuthModalConfig({isOpen: true, actionType: "delete", targetUserId: u._id})} className="p-2.5 bg-white rounded-xl text-red-500 shadow-sm border border-gray-50 hover:scale-110 transition-transform"><IoTrashOutline size={18}/></button>
+                        <td className="px-6 py-4 text-center">
+                          <span className={`px-2 py-1 rounded-sm text-[10px] font-bold uppercase ${u.role === 'admin' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
+                            {u.role}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => handleEditClick(u)} className="p-1.5 text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-200 rounded-sm transition-colors" title="Chỉnh sửa">
+                              <IoCreateOutline size={18}/>
+                            </button>
+                            <button onClick={() => {
+                                dispatch(resetLastRfid());
+                                dispatch(clearBackendRfid());
+                                setAuthModalConfig({isOpen: true, actionType: "delete", targetUserId: u._id, pendingData: null});
+                            }} className="p-1.5 text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 rounded-sm transition-colors" title="Xóa">
+                              <IoTrashOutline size={18}/>
+                            </button>
                           </div>
                         </td>
                       </tr>
                     ))}
+                    {processedUsers.length === 0 && (
+                      <tr>
+                        <td colSpan="3" className="px-6 py-8 text-center text-sm text-gray-400">Không tìm thấy người dùng nào.</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -256,119 +308,153 @@ function UserManagement() {
       </div>
 
       {/* MODAL RFID TẠO MỚI */}
-      <AnimatePresence>
-        {rfidModalOpen && (
-          <div className="fixed inset-0 flex items-center justify-center z-[1000] px-4">
-            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 bg-black/40 backdrop-blur-md" />
-            <motion.div initial={{scale:0.9, y:30}} animate={{scale:1, y:0}} exit={{scale:0.9, y:30}} className="bg-white/80 backdrop-blur-2xl rounded-[3rem] p-10 w-full max-w-[400px] z-[1001] text-center shadow-2xl border border-white">
-                <IoIdCardOutline size={50} className="mx-auto mb-6 text-blue-600 animate-pulse" />
-                <h3 className="text-2xl font-black mb-1 uppercase tracking-tighter text-gray-800">ĐANG ĐỢI THẺ</h3>
-                <p className="text-sm text-gray-500 mb-10">Mã thẻ sẽ tự động xuất hiện khi bạn quẹt</p>
-                <form onSubmit={handleRfidSubmit}>
-                  <input ref={rfidInputRef} type="text" value={rfidValue} onChange={e => setRfidValue(e.target.value)} className="w-full p-4 bg-white border border-gray-100 rounded-2xl text-center text-2xl tracking-[0.2em] outline-none mb-6 font-mono font-bold text-blue-600" placeholder="--------" readOnly />
-                  <div className="flex flex-col gap-2">
-                    <button type="submit" disabled={!rfidValue || adminLoading} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg disabled:opacity-30">XÁC NHẬN TẠO</button>
-                    <button type="button" onClick={() => setRfidModalOpen(false)} className="text-gray-400 font-bold hover:text-black py-2 text-xs tracking-widest transition-colors">HỦY BỎ</button>
-                  </div>
-                </form>
-            </motion.div>
+      {rfidModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 px-4 bg-gray-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-sm p-8 w-full max-w-sm text-center shadow-xl border border-gray-200">
+              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100">
+                <IoIdCardOutline size={30} className="text-blue-600 animate-pulse" />
+              </div>
+              <h3 className="text-lg font-bold mb-1 text-gray-800">Quét Thẻ RFID</h3>
+              <p className="text-xs text-gray-500 mb-6">Đưa thẻ vào máy quét để hoàn tất đăng ký</p>
+              
+              <form onSubmit={handleRfidSubmit}>
+                <input ref={rfidInputRef} type="text" value={rfidValue} onChange={e => setRfidValue(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-300 rounded-sm text-center text-lg tracking-widest outline-none mb-6 font-mono font-bold text-gray-800" placeholder="Đang đợi..." readOnly />
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setRfidModalOpen(false)} className="flex-1 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-sm font-bold text-sm hover:bg-gray-50">Hủy</button>
+                  <button type="submit" disabled={!rfidValue || adminLoading} className="flex-1 py-2.5 bg-blue-600 text-white rounded-sm font-bold text-sm hover:bg-blue-700 disabled:opacity-50">Lưu dữ liệu</button>
+                </div>
+              </form>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
 
       {/* MODAL CHỈNH SỬA USER */}
-      <AnimatePresence>
-        {editingUser && (
-          <div className="fixed inset-0 flex items-center justify-center z-[1000] px-4">
-            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={() => setEditingUser(null)} className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
-            <motion.div initial={{y:50, opacity:0}} animate={{y:0, opacity:1}} exit={{y:50, opacity:0}} className="bg-white rounded-[2.5rem] p-8 w-full max-w-[480px] z-[1001] shadow-2xl relative border border-white">
-                <button onClick={() => setEditingUser(null)} className="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full transition-all text-gray-400"><IoCloseOutline size={20}/></button>
-                <h3 className="text-xl font-bold mb-6 italic uppercase tracking-tighter">Edit Member</h3>
-                
-                <form onSubmit={handleEditSubmit} className="space-y-4">
-                  {/* Ảnh đại diện */}
-                  <div className="flex justify-center mb-2">
-                    <label className="relative cursor-pointer group">
-                      <div className="w-20 h-20 rounded-2xl border-4 border-gray-50 shadow-sm overflow-hidden flex items-center justify-center bg-gray-100">
-                        {editAvatarPreview ? <img src={editAvatarPreview} className="w-full h-full object-cover" /> : <span className="text-3xl font-bold text-gray-300">{editFormData.name.charAt(0)}</span>}
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><IoCameraOutline className="text-white" size={20} /></div>
-                      </div>
-                      <input type="file" className="hidden" accept="image/*" onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (file) { setEditAvatarPreview(URL.createObjectURL(file)); setEditAvatarFile(file); }
-                      }} />
-                    </label>
-                  </div>
+      {editingUser && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 px-4 bg-gray-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-sm p-6 w-full max-w-md shadow-xl relative border border-gray-200">
+              <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+                <h3 className="text-base font-bold text-gray-800">Cập nhật thông tin</h3>
+                <button onClick={() => setEditingUser(null)} className="text-gray-400 hover:text-gray-800"><IoCloseOutline size={20}/></button>
+              </div>
+              
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div className="flex justify-center mb-2">
+                  <label className="relative cursor-pointer group">
+                    <div className="w-16 h-16 rounded-sm border border-gray-300 overflow-hidden flex items-center justify-center bg-gray-50 hover:border-blue-500">
+                      {editAvatarPreview ? <img src={editAvatarPreview} className="w-full h-full object-cover" /> : <span className="text-xl font-bold text-gray-400">{editFormData.name.charAt(0)}</span>}
+                    </div>
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) { setEditAvatarPreview(URL.createObjectURL(file)); setEditAvatarFile(file); }
+                    }} />
+                  </label>
+                </div>
 
-                  {/* Tên & Email */}
-                  <div className="flex gap-4">
-                    <input type="text" value={editFormData.name} onChange={e => setEditFormData({...editFormData, name: e.target.value})} className="w-1/2 p-4 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-blue-400/20 text-sm" required placeholder="Họ và tên"/>
-                    <select value={editFormData.role} onChange={e => setEditFormData({...editFormData, role: e.target.value})} className="w-1/2 p-4 bg-gray-50 rounded-xl outline-none font-bold text-sm text-gray-600">
-                      <option value="customer">CUSTOMER</option>
-                      <option value="admin">ADMIN</option>
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Họ và tên</label>
+                    <input type="text" value={editFormData.name} onChange={e => setEditFormData({...editFormData, name: e.target.value})} className="w-full p-2.5 bg-white border border-gray-300 rounded-sm outline-none focus:border-blue-500 text-sm" required/>
+                  </div>
+                  <div className="w-1/3">
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Quyền</label>
+                    <select value={editFormData.role} onChange={e => setEditFormData({...editFormData, role: e.target.value})} className="w-full p-2.5 bg-white border border-gray-300 rounded-sm outline-none focus:border-blue-500 text-sm">
+                      <option value="customer">Người dùng</option>
+                      <option value="admin">Admin</option>
                     </select>
                   </div>
-                  <input type="email" value={editFormData.email} onChange={e => setEditFormData({...editFormData, email: e.target.value})} className="w-full p-4 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-blue-400/20 text-sm" required placeholder="Email"/>
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Email</label>
+                  <input type="email" value={editFormData.email} onChange={e => setEditFormData({...editFormData, email: e.target.value})} className="w-full p-2.5 bg-white border border-gray-300 rounded-sm outline-none focus:border-blue-500 text-sm" required/>
+                </div>
 
-                  {/* 👉 KHU VỰC THAY ĐỔI MÃ RFID */}
-                  <div className="flex flex-col gap-2 p-4 bg-blue-50/50 rounded-xl border border-blue-100 mt-2">
-                    <label className="text-xs font-bold text-blue-600 uppercase tracking-widest flex items-center gap-2">
-                      <IoIdCardOutline size={16} /> Liên kết thẻ RFID
-                    </label>
-                    <div className="flex items-center gap-3">
-                       <input
-                         type="text"
-                         value={isScanningEditRfid ? "Đang đợi thẻ..." : (editFormData.rfidCard || "Chưa có thẻ")}
-                         className={`flex-1 p-3 rounded-lg font-mono text-sm outline-none border transition-colors ${isScanningEditRfid ? 'bg-white text-blue-600 border-blue-300 animate-pulse' : 'bg-gray-100 text-gray-500 border-transparent'}`}
-                         readOnly
-                       />
-                       
-                       {/* Nút Hủy / Quét mới */}
-                       {isScanningEditRfid ? (
-                         <button type="button" onClick={() => setIsScanningEditRfid(false)} className="px-4 py-3 bg-red-100 text-red-600 rounded-lg font-bold text-sm hover:bg-red-200 transition-colors">
-                           Hủy
-                         </button>
-                       ) : (
-                         <button type="button" onClick={() => {
-                             dispatch(resetLastRfid());
-                             dispatch(clearBackendRfid()); // Xóa bộ nhớ đệm trước khi quét thẻ mới
-                             setIsScanningEditRfid(true);
-                         }} className="px-4 py-3 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors shadow-md whitespace-nowrap flex items-center gap-2">
-                            <IoRefreshOutline size={16}/> Cập nhật
-                         </button>
-                       )}
-                    </div>
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded-sm mt-2">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase mb-2 block">Cập nhật thẻ RFID (Tùy chọn)</label>
+                  <div className="flex items-center gap-2">
+                     <input
+                       type="text"
+                       value={isScanningEditRfid ? "Đang chờ tín hiệu..." : (editFormData.rfidCard || "Chưa gán thẻ")}
+                       className={`flex-1 p-2 rounded-sm font-mono text-sm outline-none border transition-colors ${isScanningEditRfid ? 'bg-blue-50 text-blue-600 border-blue-300' : 'bg-white text-gray-500 border-gray-300'}`}
+                       readOnly
+                     />
+                     {isScanningEditRfid ? (
+                       <button type="button" onClick={() => setIsScanningEditRfid(false)} className="px-3 py-2 bg-white border border-gray-300 text-gray-700 rounded-sm font-bold text-xs hover:bg-gray-100">
+                         Hủy
+                       </button>
+                     ) : (
+                       <button type="button" onClick={() => {
+                           dispatch(resetLastRfid());
+                           dispatch(clearBackendRfid()); 
+                           setIsScanningEditRfid(true);
+                       }} className="px-3 py-2 bg-white border border-gray-300 text-blue-600 rounded-sm font-bold text-xs hover:bg-blue-50 flex items-center gap-1">
+                          <IoRefreshOutline size={14}/> Quét lại
+                       </button>
+                     )}
                   </div>
+                </div>
 
-                  <button type="submit" disabled={adminLoading || isScanningEditRfid} className="w-full py-4 mt-4 bg-black text-white rounded-xl font-bold shadow-lg hover:bg-gray-800 transition-all uppercase tracking-widest disabled:opacity-50">
-                    {adminLoading ? "Đang lưu..." : "Lưu thay đổi"}
-                  </button>
-                </form>
-            </motion.div>
+                <button type="submit" disabled={adminLoading || isScanningEditRfid} className="w-full py-2.5 mt-2 bg-blue-600 text-white rounded-sm font-bold hover:bg-blue-700 transition-colors text-sm disabled:opacity-50">
+                  Lưu thay đổi
+                </button>
+              </form>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
 
-      {/* MODAL XÁC THỰC ADMIN */}
-      <AnimatePresence>
-        {authModalConfig.isOpen && (
-          <div className="fixed inset-0 flex items-center justify-center z-[2000] px-4">
-             <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
-             <motion.div initial={{scale:0.9}} animate={{scale:1}} exit={{scale:0.9}} className="bg-white rounded-[2rem] p-8 w-full max-w-[380px] z-[2001] text-center shadow-2xl">
-                <IoLockClosedOutline size={40} className="mx-auto text-red-500 mb-4" />
-                <h3 className="font-bold text-lg mb-2 uppercase tracking-tighter">Security Check</h3>
-                <p className="text-xs text-gray-400 mb-8 font-medium italic">Vui lòng nhập mật khẩu Admin để xác nhận</p>
-                <form onSubmit={executeSecureAction}>
-                   <input type="password" value={adminPassword} onChange={e => setAdminPassword(e.target.value)} className="w-full p-4 bg-gray-50 rounded-2xl mb-6 text-center tracking-widest outline-none border focus:border-red-500 transition-all font-mono font-bold" placeholder="********" required autoFocus />
-                   <div className="flex gap-3">
-                      <button type="button" onClick={() => setAuthModalConfig({...authModalConfig, isOpen: false})} className="flex-1 py-3 bg-gray-100 rounded-xl font-bold text-gray-400 hover:bg-gray-200 transition-colors">HỦY</button>
-                      <button type="submit" disabled={adminLoading} className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl shadow-md hover:bg-red-700 transition-colors">OK</button>
-                   </div>
-                </form>
-             </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* MODAL XÁC THỰC BẢO MẬT (HỖ TRỢ THẺ + PASSWORD) */}
+      {authModalConfig.isOpen && (
+        <div className="fixed inset-0 flex items-center justify-center z-[2000] px-4 bg-gray-900/60 backdrop-blur-sm">
+           <div className="bg-white rounded-sm p-6 w-full max-w-sm shadow-xl border border-gray-200">
+              <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-4">
+                  <IoLockClosedOutline size={20} className="text-red-500" />
+                  <h3 className="font-bold text-gray-800">Xác thực hệ thống</h3>
+              </div>
+              
+              <p className="text-xs text-gray-500 mb-4">Vui lòng quét thẻ hoặc nhập mật khẩu Admin để phê duyệt hành động này.</p>
+              
+              <form onSubmit={executeSecureAction}>
+                 {/* Lựa chọn 1: Quẹt thẻ */}
+                 <div className="mb-3">
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mã thẻ RFID</label>
+                    <input 
+                       type="text" 
+                       value={authScannedRfid || ""} 
+                       placeholder="Chưa nhận tín hiệu thẻ..."
+                       className="w-full p-2.5 bg-gray-50 rounded-sm outline-none border border-gray-300 text-sm font-mono text-gray-700 focus:border-blue-500" 
+                       readOnly 
+                    />
+                 </div>
+
+                 <div className="flex items-center justify-center gap-4 my-4">
+                    <div className="h-px bg-gray-200 flex-1"></div>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase">Hoặc</span>
+                    <div className="h-px bg-gray-200 flex-1"></div>
+                 </div>
+
+                 {/* Lựa chọn 2: Nhập Password */}
+                 <div className="mb-6">
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mật khẩu Admin</label>
+                    <input 
+                       type="password" 
+                       value={adminPassword}
+                       onChange={(e) => {
+                         setAdminPassword(e.target.value);
+                         if(authScannedRfid) setAuthScannedRfid(""); // Xóa thẻ nếu người dùng cố tình gõ pass
+                       }}
+                       placeholder="Nhập mật khẩu..."
+                       className="w-full p-2.5 bg-white rounded-sm outline-none border border-gray-300 text-sm focus:border-blue-500" 
+                    />
+                 </div>
+
+                 <div className="flex gap-2">
+                    <button type="button" onClick={() => setAuthModalConfig({isOpen: false, actionType: null, targetUserId: null, pendingData: null})} className="flex-1 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-sm font-bold text-sm hover:bg-gray-50">Hủy</button>
+                    <button type="submit" disabled={adminLoading || (!authScannedRfid && !adminPassword)} className="flex-1 py-2.5 bg-blue-600 text-white font-bold rounded-sm hover:bg-blue-700 disabled:opacity-50 text-sm">Phê duyệt</button>
+                 </div>
+              </form>
+           </div>
+        </div>
+      )}
     </div>
   );
 }

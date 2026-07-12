@@ -1,253 +1,255 @@
 const express = require("express");
 const Product = require("../models/Product");
+const Category = require("../models/Category");
 const Notification = require("../models/Notification");
 const User = require("../models/User");
 const { protect, admin } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// POST /api/products
-// create new product
+// ==========================================
+// 🚀 POST /api/products (TẠO SẢN PHẨM MỚI)
+// ==========================================
 router.post("/", protect, admin, async (req, res) => {
-  
   try {
     const {
-      name,
-      description,
-      price,
-      discountPrice,
-      countInStock,
-      category,
-      brand,
-      sizes,
-      colors,
-      collections,
-      material,
-      gender,
-      images,
-      isFeatured,
-      isPublished,
-      tags,
-      dimensions,
-      weight,
-      sku,
+      name, description, price, discountPrice, countInStock, category, brand, 
+      attributes, variants, images, isFeatured, isPublished, tags, dimensions, weight, sku
     } = req.body;
 
     const product = new Product({
-      name,
-      description,
-      price,
-      discountPrice,
-      countInStock,
-      category,
-      brand,
-      sizes,
-      colors,
-      collections,
-      material,
-      gender,
-      images,
-      isFeatured,
-      isPublished,
-      tags,
-      dimensions,
-      weight,
-      sku,
-      user: req.user._id, // phan hoi admin ai da tao ra san pham nay
+      name, description, price, discountPrice, countInStock, category, brand,
+      attributes, 
+      variants,   
+      images, isFeatured, isPublished, tags, dimensions, weight, sku,
+      user: req.user._id, 
+      lastEditByUser: req.user._id,
     });
     
-   const newProduct = await product.save();
+    const newProduct = await product.save();
     res.status(201).json(newProduct);
-   
-  
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
+    console.error("Lỗi tạo sản phẩm:", err);
+    res.status(500).json({ message: "Lỗi Server khi tạo sản phẩm" });
   }
 });
 
-
-// PUT /api/products/:id
+// ==========================================
+// 🚀 PUT /api/products/:id (SỬA SẢN PHẨM)
+// ==========================================
 router.put("/:id", protect, admin, async (req, res) => {
   try {
     const {
-      name,
-      description,
-      price,
-      discountPrice,
-      countInStock,
-      category,
-      brand,
-      sizes,
-      colors,
-      collections,
-      material,
-      gender,
-      images,
-      isFeatured,
-      isPublished,
-      tags,
-      dimensions,
-      weight,
-      sku,
+      name, description, price, discountPrice, countInStock, category, brand,
+      attributes, variants, images, isFeatured, isPublished, tags, dimensions, weight, sku
     } = req.body;
 
     const product = await Product.findById(req.params.id);
     if (product) {
       product.name = name || product.name;
       product.description = description || product.description;
-      product.price = price || product.price;
-      product.discountPrice = discountPrice || product.discountPrice;
-      product.countInStock = countInStock || product.countInStock;
+      product.price = price !== undefined ? price : product.price;
+      product.discountPrice = discountPrice !== undefined ? discountPrice : product.discountPrice;
+      product.countInStock = countInStock !== undefined ? countInStock : product.countInStock;
       product.category = category || product.category;
       product.brand = brand || product.brand;
-      product.sizes = sizes || product.sizes;
-      product.colors = colors || product.colors;
-      product.collections = collections || product.collections;
-      product.material = material || product.material;
-      product.gender = gender || product.gender;
+      
+      product.attributes = attributes || product.attributes;
+      product.variants = variants || product.variants;
+      
+      product.sizes = undefined;
+      product.colors = undefined;
+      product.material = undefined;
+      product.gender = undefined;
+
       product.images = images || product.images;
-      product.isFeatured =
-        isFeatured !== undefined ? isFeatured : product.isFeatured;
-      product.isPublished =
-        isPublished !== undefined ? isPublished : product.isPublished;
+      product.isFeatured = isFeatured !== undefined ? isFeatured : product.isFeatured;
+      product.isPublished = isPublished !== undefined ? isPublished : product.isPublished;
       product.tags = tags || product.tags;
       product.dimensions = dimensions || product.dimensions;
       product.weight = weight || product.weight;
       product.sku = sku || product.sku;
+      product.lastEditByUser = req.user._id;
 
-      // save update
-      const updateProduct = await product.save();
-      res.json(updateProduct);
+      const updatedProduct = await product.save();
+      res.json(updatedProduct);
     } else {
-      res.status(404).json({ message: "Product not found " });
+      res.status(404).json({ message: "Không tìm thấy sản phẩm" });
     }
   } catch (err) {
-    console.error(err);
-    res.status(500).send("server error");
+    console.error("Lỗi cập nhật:", err);
+    res.status(500).json({ message: "Lỗi Server" });
   }
 });
 
-// Delete /api/products/:id
+// ==========================================
+// 🚀 DELETE /api/products/:id
+// ==========================================
 router.delete("/:id", protect, admin, async (req, res) => {
   try {
-    // tim product bang id
     const product = await Product.findById(req.params.id);
     if (product) {
-      // remove
       await product.deleteOne();
-      res.json({ message: "Product removed " });
+      res.json({ message: "Đã xóa sản phẩm" });
     } else {
-      res.status(404).json({ message: "Product not found" });
+      res.status(404).json({ message: "Không tìm thấy sản phẩm" });
     }
   } catch (err) {
     console.error(err);
-    res.status(500).send("server error");
+    res.status(500).send("Lỗi server");
   }
 });
 
-// route GET /api/products
-// lay tat ca product
+// ==========================================
+// 🚀 GET /api/products (LẤY VÀ LỌC SẢN PHẨM NGOÀI TRANG CHỦ)
+// ==========================================
 router.get("/", async (req, res) => {
   try {
-    const {
-      collection,
-      size,
-      color,
-      gender,
-      minPrice,
-      maxPrice,
-      sortBy,
-      search,
-      category,
-      material,
-      brand,
-      limit,
-    } = req.query;
+    const { category, brand, size, color, gender, material, minPrice, maxPrice, sortBy, search, limit } = req.query;
     let query = {};
 
-    if (collection && collection.toLocaleLowerCase() !== "all") {
-      query.collections = collection;
+    // 1. Ép kiểu Category ID
+    if (category && category.toLowerCase() !== "all") {
+      const categoryDoc = await Category.findOne({ 
+        name: { $regex: new RegExp(`^${category}$`, "i") } 
+      });
+
+      if (categoryDoc) {
+        query.category = categoryDoc._id; 
+      } else {
+        return res.status(200).json([]); 
+      }
     }
-    if (category && category.toLocaleLowerCase() !== "all") {
-      query.category = {$regex: category , $options : "i"};
+
+    // 2. Tìm kiếm
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
     }
-    if (material) {
-      query.material = { $in: material.split(",") };
-    }
+
+    // 3. Lọc Brand
     if (brand) {
       query.brand = { $in: brand.split(",") };
     }
-    if (size) {
-      query.sizes = { $in: size.split(",") };
-    }
-    if (color) {
-      query.colors = {$elemMatch: {$regex: color , $options : "i"}};
-    }
-    if (gender) {
-      query.gender = gender
-    }
+
+    // 4. Lọc Giá
     if (minPrice || maxPrice) {
       query.price = {};
       if (minPrice) query.price.$gte = Number(minPrice);
       if (maxPrice) query.price.$lte = Number(maxPrice);
     }
-    if (search) {
-      query.$or = [
-        {
-          name: { $regex: search, $options: "i" },
-        },
-        { description: { $regex: search, $options: "i" } },
-      ];
+
+    // ==========================================================
+    // 🚀 5. LỌC ĐỘNG THÔNG MINH (TÍCH HỢP TỪ ĐIỂN SONG NGỮ)
+    // ==========================================================
+    let conditions = [];
+
+    // Giới tính
+    if (gender) {
+      conditions.push({
+        $or: [
+          { gender: { $regex: new RegExp(`^${gender}$`, "i") } },
+          { attributes: { $elemMatch: { name: { $regex: /^gender$/i }, value: { $regex: new RegExp(`^${gender}$`, "i") } } } }
+        ]
+      });
     }
-    // sort logic
+
+    // Màu sắc
+    if (color) {
+      const colorMap = {
+        "đỏ": "red",
+        "xanh dương": "blue",
+        "đen": "black",
+        "xanh lá": "green",
+        "vàng": "yellow",
+        "xám": "gray",
+        "trắng": "white",
+        "hồng": "pink",
+        "be": "beige",
+        "navy": "navy"
+      };
+      
+      const engColor = colorMap[color.toLowerCase()] || color;
+
+      conditions.push({
+        $or: [
+          { colors: { $elemMatch: { $regex: color, $options: "i" } } },
+          { attributes: { $elemMatch: { name: { $regex: /^color$/i }, value: { $regex: new RegExp(`${color}|${engColor}`, "i") } } } },
+          { variants: { $elemMatch: { variantName: { $regex: new RegExp(`${color}|${engColor}`, "i") } } } }
+        ]
+      });
+    }
+
+    // Kích cỡ (Size)
+    if (size) {
+      const sizeList = size.split(",");
+      conditions.push({
+        $or: [
+          { sizes: { $in: sizeList } },
+          { attributes: { $elemMatch: { name: { $regex: /^size$/i }, value: { $in: sizeList } } } },
+          { variants: { $elemMatch: { variantName: { $regex: new RegExp(sizeList.join("|"), "i") } } } }
+        ]
+      });
+    }
+
+    // Chất liệu
+    if (material) {
+      const materialList = material.split(",");
+      conditions.push({
+        $or: [
+          { material: { $in: materialList } },
+          { attributes: { $elemMatch: { name: { $regex: /^material$/i }, value: { $in: materialList } } } }
+        ]
+      });
+    }
+
+    // Gộp tất cả các điều kiện lọc lại với nhau
+    if (conditions.length > 0) {
+      query.$and = conditions;
+    }
+
+    // 6. Sắp xếp
     let sort = {};
     if (sortBy) {
       switch (sortBy) {
-        case "priceAsc":
-          sort = { price: 1 };
-          break;
-        case "priceDesc":
-          sort = { price: -1 };
-          break;
-        case "popularity":
-          sort = { rating: -1 };
-          break;
-        default:
-          sort = {createdAt : -1 }
-          break;
+        case "priceAsc": sort = { price: 1 }; break;
+        case "priceDesc": sort = { price: -1 }; break;
+        case "popularity": sort = { rating: -1 }; break;
+        default: sort = { createdAt: -1 }; break;
       }
+    } else {
+      sort = { createdAt: -1 };
     }
 
-    // fetch product and apply sort
+    // 7. Gọi Database
     let products = await Product.find(query)
       .sort(sort)
-      .limit(Number(limit) || 0);
+      .limit(Number(limit) || 0)
+      .populate("category", "name");
+      
     res.json(products);
   } catch (err) {
-    res.status(500).send("server error");
+    console.error("Lỗi get products:", err);
+    res.status(500).json({ message: "Lỗi Server" });
   }
 });
 
-// route Get /api/products/best-seller
-// retrieve the product with highest rating
+// ==========================================
+// CÁC ROUTE PHỤ
+// ==========================================
 router.get("/best-seller", async (req, res) => {
   try {
-    const bestSeller = await Product.findOne().sort({
-      rating: -1,
-    });
-    if (bestSeller) {
-      res.json(bestSeller);
-    } else {
-      res.status(404).json({ message: "No best seller found" });
-    }
+    const bestSeller = await Product.findOne().sort({ rating: -1 });
+    if (bestSeller) res.json(bestSeller);
+    else res.status(404).json({ message: "No best seller found" });
   } catch (err) {
     console.error(err);
     res.status(500).send("server error");
   }
 });
 
-// route get /api/products/new-arrivals
 router.get("/new-arrivals", async (req, res) => {
   try {
     const newArrivals = await Product.find().sort({ createdAt: -1 }).limit(8);
@@ -257,19 +259,17 @@ router.get("/new-arrivals", async (req, res) => {
     res.status(500).send("server error");
   }
 });
-// GET /api/products/recommend?bodyType=Slim
+
 router.get("/recommend", async (req, res) => {
-  const { bodyType } = req.query; // Nhận chữ "Slim", "Fit" hoặc "Plus-size" từ Frontend
+  const { bodyType } = req.query; 
 
   try {
     if (!bodyType) {
       return res.status(400).json({ message: "Thiếu thông tin bodyType" });
     }
-
-    // Tìm những sản phẩm có chứa cái tag đó trong mảng suitableForBodyType
     const recommendedProducts = await Product.find({ 
         suitableForBodyType: { $in: [bodyType] } 
-    }).limit(8); // Lấy tối đa 8 món show cho đẹp
+    }).limit(8); 
 
     res.status(200).json(recommendedProducts);
   } catch (err) {
@@ -277,24 +277,7 @@ router.get("/recommend", async (req, res) => {
     res.status(500).json({ message: "Lỗi Server" });
   }
 });
-// route  GET /api/products/:id
-// get a single product by id
-router.get("/:id", async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
-    if (product) {
-      res.json(product);
-    } else {
-      res.status(404).json({ message: "Product not found" });
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
-  }
-});
 
-// route Get /api/products/similar/:id
-// retrieve similar products base on the current product gender and category
 router.get("/similar/:id", async (req, res) => {
   const { id } = req.params;
   try {
@@ -314,6 +297,15 @@ router.get("/similar/:id", async (req, res) => {
   }
 });
 
-
+router.get("/:id", async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id).populate("category", "name");
+    if (product) res.json(product);
+    else res.status(404).json({ message: "Product not found" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
 
 module.exports = router;

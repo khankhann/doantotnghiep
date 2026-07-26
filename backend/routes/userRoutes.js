@@ -1,10 +1,10 @@
 const express = require("express");
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
-const { protect } = require("../middleware/authMiddleware");
 const router = express.Router();
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
+const { protect, admin } = require("../middleware/authMiddleware");
 const bcrypt = require('bcryptjs'); // Đảm bảo đã import thư viện mã hóa
 
 
@@ -162,10 +162,50 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// route PUT /api/users/:id 
+// Admin cập nhật thông tin user (bao gồm đổi mật khẩu)
 // ==========================================
-// Các Routes Dưới Này Giữ Nguyên
-// ==========================================
+router.put("/:id", protect, admin, upload.single('avatar'), async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
 
+    if (user) {
+      // 1. Cập nhật các trường cơ bản
+      user.name = req.body.name || user.name;
+      user.email = req.body.email || user.email;
+      user.role = req.body.role || user.role;
+      user.rfidCard = req.body.rfidCard || user.rfidCard;
+
+      // 2. NẾU ADMIN CÓ NHẬP MẬT KHẨU MỚI THÌ GÁN VÀO ĐÂY
+      if (req.body.password) {
+        user.password = req.body.password;
+      }
+
+      // 3. Xử lý upload ảnh avatar mới nếu có
+      if (req.file) {
+        const cloudResult = await uploadToCloudinary(req.file.buffer);
+        user.avatar = cloudResult.secure_url;
+      }
+
+      // 4. Lưu lại (Lúc này Middleware băm pass trong User Model sẽ tự chạy)
+      const updatedUser = await user.save();
+      
+      res.json({
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        rfidCard: updatedUser.rfidCard,
+        avatar: updatedUser.avatar
+      });
+    } else {
+      res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+  } catch (err) {
+    console.error("Lỗi cập nhật User: ", err);
+    res.status(500).json({ message: "Lỗi server khi cập nhật người dùng" });
+  }
+});
 // route POST /api/users/refresh-token
 router.post("/refresh-token", async (req, res) => {
   const { refreshToken } = req.body;
@@ -226,6 +266,7 @@ router.put('/profile', protect, upload.single('avatar'), async (req, res) => {
         res.status(500).json({ message: "Cập nhật thất bại!" });
     }
 });
+
 // Route: POST /api/users/verify-access
 // ==========================================
 router.post('/verify-access', async (req, res) => {

@@ -6,7 +6,8 @@ import { fetchLastRfid, resetLastRfid, clearBackendRfid } from "@redux/slices/io
 import { toast } from "sonner";
 import {
   IoSearchOutline, IoTrashOutline, IoCameraOutline, IoIdCardOutline, 
-  IoCreateOutline, IoCloseOutline, IoLockClosedOutline, IoPersonAddOutline, IoRefreshOutline
+  IoCreateOutline, IoCloseOutline, IoLockClosedOutline, IoPersonAddOutline, IoRefreshOutline,
+  IoReceiptOutline 
 } from "react-icons/io5";
 
 function UserManagement() {
@@ -15,33 +16,78 @@ function UserManagement() {
   const { users, loading: adminLoading } = useSelector((state) => state.admin);
   const { lastRfid } = useSelector((state) => state.iotSensor);
 
+  // STATE TÌM KIẾM VÀ LỌC
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
+  // STATE FORM TẠO MỚI
   const [formData, setFormData] = useState({ name: "", email: "", password: "", role: "customer" });
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
 
+  // STATE RFID
   const [rfidModalOpen, setRfidModalOpen] = useState(false);
   const [rfidValue, setRfidValue] = useState("");
   const rfidInputRef = useRef(null);
 
+  // STATE CHỈNH SỬA
   const [editingUser, setEditingUser] = useState(null);
-  const [editFormData, setEditFormData] = useState({ name: "", email: "", role: "", rfidCard: "" });
+  const [editFormData, setEditFormData] = useState({ name: "", email: "", role: "", rfidCard: "", newPassword: "" });
   const [editAvatarPreview, setEditAvatarPreview] = useState(null);
   const [editAvatarFile, setEditAvatarFile] = useState(null);
   const [isScanningEditRfid, setIsScanningEditRfid] = useState(false);
 
-  // 👉 CẤU HÌNH MODAL XÁC THỰC (Cho phép nhập cả Thẻ và Password)
+  // STATE LỊCH SỬ ĐƠN HÀNG
+  const [viewingUserOrders, setViewingUserOrders] = useState(null);
+  const [userOrders, setUserOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+
+  // STATE XÁC THỰC (MODAL DELETE / EDIT)
   const [authModalConfig, setAuthModalConfig] = useState({ isOpen: false, actionType: null, targetUserId: null, pendingData: null });
   const [authScannedRfid, setAuthScannedRfid] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
 
+  // FETCH DANH SÁCH USER
   useEffect(() => {
     if (user?.role === "admin") { dispatch(fetchUsers()); }
   }, [dispatch, user]);
 
-  // LẮNG NGHE THẺ RFID
+  useEffect(() => {
+    const fetchUserOrders = async () => {
+      if (!viewingUserOrders) return;
+      setLoadingOrders(true);
+      try {
+        // 👇👇👇 ĐỔI SỐ 5000 THÀNH 9000 Ở ĐÂY NÈ FEN 👇👇👇
+        const res = await fetch(`http://localhost:9000/api/admin/orders/user/${viewingUserOrders._id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("userToken")}`, 
+          },
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          setUserOrders(data);
+        } else {
+          toast.error(data.message || "Lỗi khi tải đơn hàng");
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error("Mất kết nối đến server!");
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
+
+    if (viewingUserOrders) {
+      fetchUserOrders();
+    } else {
+      setUserOrders([]);
+    }
+  }, [viewingUserOrders, user?.token]);
+
+  // LẮNG NGHE TÍN HIỆU RFID
   useEffect(() => {
     let interval;
     if (rfidModalOpen || isScanningEditRfid || authModalConfig.isOpen) {
@@ -59,7 +105,7 @@ function UserManagement() {
     return () => clearInterval(interval);
   }, [rfidModalOpen, isScanningEditRfid, authModalConfig.isOpen, dispatch]);
 
-  // XỬ LÝ NHẬN THẺ
+  // XỬ LÝ DỮ LIỆU THẺ RFID
   useEffect(() => {
     if (lastRfid) {
       if (rfidModalOpen) {
@@ -71,7 +117,6 @@ function UserManagement() {
         toast.success("Đã cập nhật mã thẻ cho User!");
       } else if (authModalConfig.isOpen) {
         setAuthScannedRfid(lastRfid);
-        // Tự động clear password nếu người dùng quét thẻ
         setAdminPassword(""); 
         toast.success("Đã quét thẻ xác thực!");
       }
@@ -124,7 +169,8 @@ function UserManagement() {
       name: userData.name, 
       email: userData.email, 
       role: userData.role,
-      rfidCard: userData.rfidCard || "" 
+      rfidCard: userData.rfidCard || "",
+      newPassword: "" 
     });
     setEditAvatarPreview(userData.avatar || null);
     setEditAvatarFile(null);
@@ -133,12 +179,20 @@ function UserManagement() {
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
+    if (editFormData.newPassword && editFormData.newPassword.length < 6) {
+      return toast.error("Mật khẩu mới phải có ít nhất 6 ký tự!");
+    }
+
     const updateData = new FormData();
     updateData.append("id", editingUser._id);
     updateData.append("name", editFormData.name);
     updateData.append("email", editFormData.email);
     updateData.append("role", editFormData.role);
     updateData.append("rfidCard", editFormData.rfidCard);
+    
+    if (editFormData.newPassword) {
+      updateData.append("password", editFormData.newPassword);
+    }
     if (editAvatarFile) updateData.append("avatar", editAvatarFile);
     
     dispatch(resetLastRfid());
@@ -148,14 +202,11 @@ function UserManagement() {
 
   const executeSecureAction = async (e) => {
     e.preventDefault();
-    
-    // Phải có 1 trong 2: Quẹt thẻ HOẶC Nhập mật khẩu
     if (!authScannedRfid && !adminPassword) {
       return toast.error("Vui lòng quẹt thẻ hoặc nhập mật khẩu để xác thực!");
     }
 
     const { actionType, targetUserId, pendingData } = authModalConfig;
-    
     try {
       if (actionType === "delete") {
         await dispatch(deleteUser({ 
@@ -280,9 +331,15 @@ function UserManagement() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {/* Nút Xem Lịch Sử Hóa Đơn */}
+                            <button onClick={() => setViewingUserOrders(u)} className="p-1.5 text-green-600 hover:bg-green-50 border border-transparent hover:border-green-200 rounded-sm transition-colors" title="Lịch sử đơn hàng">
+                              <IoReceiptOutline size={18}/>
+                            </button>
+
                             <button onClick={() => handleEditClick(u)} className="p-1.5 text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-200 rounded-sm transition-colors" title="Chỉnh sửa">
                               <IoCreateOutline size={18}/>
                             </button>
+                            
                             <button onClick={() => {
                                 dispatch(resetLastRfid());
                                 dispatch(clearBackendRfid());
@@ -306,6 +363,92 @@ function UserManagement() {
           </div>
         </div>
       </div>
+
+      {/* MODAL HIỂN THỊ LỊCH SỬ ĐƠN HÀNG */}
+      {viewingUserOrders && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 px-4 bg-gray-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-sm w-full max-w-4xl shadow-xl border border-gray-200 flex flex-col max-h-[80vh]">
+            <div className="p-5 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+              <div>
+                <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
+                  <IoReceiptOutline className="text-green-600" />
+                  Lịch sử mua hàng
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Khách hàng: <span className="font-bold text-gray-700">{viewingUserOrders.name}</span> ({viewingUserOrders.email})
+                </p>
+              </div>
+              <button onClick={() => setViewingUserOrders(null)} className="text-gray-400 hover:text-gray-800 transition-colors bg-white p-1 rounded-sm border border-gray-200 shadow-sm">
+                <IoCloseOutline size={22}/>
+              </button>
+            </div>
+            
+            <div className="p-0 overflow-y-auto flex-1 bg-white">
+              {loadingOrders ? (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                  <p className="text-sm font-bold text-gray-500">Đang tải dữ liệu đơn hàng...</p>
+                </div>
+              ) : userOrders && userOrders.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left whitespace-nowrap">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr className="text-[10px] font-bold text-gray-500 uppercase">
+                        <th className="px-6 py-4">Mã đơn (Order ID)</th>
+                        <th className="px-6 py-4">Ngày tạo</th>
+                        <th className="px-6 py-4">Địa chỉ giao</th>
+                        <th className="px-6 py-4 text-center">Số SP</th>
+                        <th className="px-6 py-4 text-right">Tổng tiền</th>
+                        <th className="px-6 py-4 text-center">Trạng thái</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {userOrders.map((order) => (
+                        <tr key={order._id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4">
+                            <span className="font-mono font-bold text-gray-700 text-sm">
+                              #{order._id.substring(0, 6).toUpperCase()}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {new Date(order.createdAt).toLocaleDateString("vi-VN")}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600 truncate max-w-[150px]">
+                            {order.shippingAddress?.address || "Tại quầy, VN"}
+                          </td>
+                          <td className="px-6 py-4 text-center text-sm font-bold text-gray-700">
+                            {order.orderItems?.length || 0}
+                          </td>
+                          <td className="px-6 py-4 text-right font-bold text-red-600 text-sm">
+                            {order.totalPrice?.toLocaleString("vi-VN")} đ
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <span className="px-2 py-1 bg-green-50 text-green-700 border border-green-200 rounded-sm text-[10px] font-bold uppercase">
+                              {order.isPaid ? "PAID" : "UNPAID"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-20 bg-gray-50/50">
+                  <IoReceiptOutline size={40} className="mx-auto text-gray-300 mb-3" />
+                  <p className="text-sm font-bold text-gray-600">Không có đơn hàng nào</p>
+                  <p className="text-xs text-gray-500 mt-1">Khách hàng này chưa thực hiện giao dịch nào trên hệ thống.</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-4 border-t border-gray-200 bg-gray-50 text-right">
+              <button onClick={() => setViewingUserOrders(null)} className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-sm font-bold text-sm hover:bg-gray-100 transition-colors shadow-sm">
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL RFID TẠO MỚI */}
       {rfidModalOpen && (
@@ -369,6 +512,17 @@ function UserManagement() {
                   <input type="email" value={editFormData.email} onChange={e => setEditFormData({...editFormData, email: e.target.value})} className="w-full p-2.5 bg-white border border-gray-300 rounded-sm outline-none focus:border-blue-500 text-sm" required/>
                 </div>
 
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Đổi mật khẩu (Bỏ trống nếu giữ nguyên)</label>
+                  <input 
+                    type="password" 
+                    value={editFormData.newPassword} 
+                    onChange={e => setEditFormData({...editFormData, newPassword: e.target.value})} 
+                    className="w-full p-2.5 bg-white border border-gray-300 rounded-sm outline-none focus:border-blue-500 text-sm" 
+                    placeholder="Nhập mật khẩu mới..."
+                  />
+                </div>
+
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-sm mt-2">
                   <label className="text-[10px] font-bold text-gray-500 uppercase mb-2 block">Cập nhật thẻ RFID (Tùy chọn)</label>
                   <div className="flex items-center gap-2">
@@ -402,7 +556,7 @@ function UserManagement() {
         </div>
       )}
 
-      {/* MODAL XÁC THỰC BẢO MẬT (HỖ TRỢ THẺ + PASSWORD) */}
+      {/* MODAL XÁC THỰC BẢO MẬT */}
       {authModalConfig.isOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-[2000] px-4 bg-gray-900/60 backdrop-blur-sm">
            <div className="bg-white rounded-sm p-6 w-full max-w-sm shadow-xl border border-gray-200">
@@ -414,7 +568,6 @@ function UserManagement() {
               <p className="text-xs text-gray-500 mb-4">Vui lòng quét thẻ hoặc nhập mật khẩu Admin để phê duyệt hành động này.</p>
               
               <form onSubmit={executeSecureAction}>
-                 {/* Lựa chọn 1: Quẹt thẻ */}
                  <div className="mb-3">
                     <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mã thẻ RFID</label>
                     <input 
@@ -432,7 +585,6 @@ function UserManagement() {
                     <div className="h-px bg-gray-200 flex-1"></div>
                  </div>
 
-                 {/* Lựa chọn 2: Nhập Password */}
                  <div className="mb-6">
                     <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mật khẩu Admin</label>
                     <input 
@@ -440,9 +592,9 @@ function UserManagement() {
                        value={adminPassword}
                        onChange={(e) => {
                          setAdminPassword(e.target.value);
-                         if(authScannedRfid) setAuthScannedRfid(""); // Xóa thẻ nếu người dùng cố tình gõ pass
+                         if(authScannedRfid) setAuthScannedRfid("");
                        }}
-                       placeholder="Nhập mật khẩu..."
+                       placeholder="Nhập mật khẩu xác nhận..."
                        className="w-full p-2.5 bg-white rounded-sm outline-none border border-gray-300 text-sm focus:border-blue-500" 
                     />
                  </div>

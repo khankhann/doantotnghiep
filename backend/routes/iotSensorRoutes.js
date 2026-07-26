@@ -3,9 +3,17 @@ const router = express.Router();
 const axios = require("axios");
 const User = require("../models/User");
 const Product = require("../models/Product");
-
+const CameraLog = require("../models/CameraLog");
 // 📦 IMPORT MODEL MONGODB
 const SensorData = require("../models/SensorData");
+
+// ☁️ IMPORT & CẤU HÌNH CLOUDINARY (THÊM MỚI)
+const cloudinary = require("cloudinary").v2;
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 // 1. BIẾN CHỐNG SPAM DISCORD
 let lastAlertTime = 0; 
@@ -29,25 +37,45 @@ let latestRfidTag = {
     scannedAt: 0
 };
 
-// 🔥 2.2 BỘ NHỚ TẠM ĐIỀU KHIỂN (MỚI THÊM)
-// Biến này lưu trạng thái công tắc trên Web để ESP32 đọc
+// 🔥 2.2 BỘ NHỚ TẠM ĐIỀU KHIỂN
 let iotControlState = {
     fireSystem: true,
     securitySystem: true
 };
 
+// 📸 2.3 BỘ NHỚ TẠM CAMERA & CẢNH BÁO TRỘM (THÊM MỚI)
+let manualCaptureTrigger = false;
+let latestImageUrl = null; 
+let latestAlert = { isIntruder: false, timestamp: 0 };
+
 // 3. HÀM BẮN THÔNG BÁO DISCORD
-const sendDiscordAlert = async (temp, hum) => {
+const sendDiscordAlert = async (temp, hum, type = "WEATHER", imageUrl = null) => {
     const webhookUrl = process.env.DISCORD_WEBHOOK_URL; 
     try {
-        await axios.post(webhookUrl, {
-            content: ` **BÁO ĐỘNG KHO HÀNG** \nNhiệt độ: **${temp}°C**\n Độ ẩm: **${hum}%**`
-        });
+        let payload = { content: "" };
+
+        if (type === "WEATHER") {
+            payload.content = `🔥 **BÁO ĐỘNG KHO HÀNG (NHIỆT ĐỘ)** \nNhiệt độ: **${temp}°C**\nĐộ ẩm: **${hum}%**`;
+        } else if (type === "INTRUDER") {
+            payload.content = `🚨 **CẢNH BÁO ĐỘT NHẬP** \nCảm biến PIR phát hiện có chuyển động trong kho hàng lúc ${new Date().toLocaleTimeString("vi-VN")}!`;
+        }
+
+        // BÍ QUYẾT LÀ ĐOẠN NÀY: Nếu có link ảnh, nhét nó vào tin nhắn Discord
+        if (imageUrl) {
+            payload.embeds = [
+                {
+                    title: "📸 Ảnh chụp từ Camera An ninh",
+                    color: 16711680, // Mã màu Đỏ cho báo động
+                    image: { url: imageUrl }
+                }
+            ];
+        }
+        
+        await axios.post(webhookUrl, payload);
     } catch (error) {
         console.log(" [DISCORD] Lỗi:", error.message);
     }
 };
-
 // ==========================================
 // 📌 API 1: ESP32 GỬI DATA SENSOR (POST)
 // ==========================================
@@ -69,7 +97,7 @@ router.post("/sensor", async(req, res) => {
     if (isAlertNow) {
         const currentTime = Date.now();
         if (currentTime - lastAlertTime > COOLDOWN_TIME) {
-            sendDiscordAlert(temp, hum); 
+            sendDiscordAlert(temp, hum, "WEATHER"); 
             lastAlertTime = currentTime; 
         }
     }
@@ -96,7 +124,6 @@ router.post("/sensor", async(req, res) => {
 // 🔥 API 1.2: ESP32 GỬI MÃ THẺ RFID (POST)
 // ==========================================
 router.post("/rfid/scan", async (req, res) => {
-    // Đã fix lỗi khai báo const thành let để có thể gán lại chuỗi
     let { rfidTag } = req.body;
     if (!rfidTag) return res.status(400).json({ message: "Không tìm thấy mã thẻ!" });
     
@@ -117,7 +144,7 @@ router.post("/rfid/scan", async (req, res) => {
             console.log(`[RFID] Đã tìm thấy PRODUCT: ${product.name}`);
         } 
         else {
-            latestRfidTag = { tag: rfidTag, type: "UNKNOWN", data: null, scannedAt: Date.now(), error: "Thẻ này chưa được đăng ký trong hệ thống!" };
+            latestRfidTag = { tag: rfidTag, type: "UNKNOWN", data: null, scannedAt: Date.now(), error: "Thẻ này chưa được đăng ký!" };
             console.log(`[RFID] Thẻ vô danh: ${rfidTag}`);
         }
 
@@ -201,11 +228,10 @@ router.get("/history", async (req, res) => {
 router.post("/control", (req, res) => {
     const { fireSystem, securitySystem } = req.body;
     
-    // Cập nhật trạng thái nếu Frontend gửi lên
     if (fireSystem !== undefined) iotControlState.fireSystem = fireSystem;
     if (securitySystem !== undefined) iotControlState.securitySystem = securitySystem;
     
-    console.log(`[IOT CONTROL] Hệ thống cháy: ${iotControlState.fireSystem ? 'ON' : 'OFF'} | An ninh: ${iotControlState.securitySystem ? 'ON' : 'OFF'}`);
+    console.log(`[IOT CONTROL] Cháy: ${iotControlState.fireSystem ? 'ON' : 'OFF'} | An ninh: ${iotControlState.securitySystem ? 'ON' : 'OFF'}`);
     res.status(200).json({ message: "Đã cập nhật lệnh điều khiển", state: iotControlState });
 });
 
@@ -214,6 +240,79 @@ router.post("/control", (req, res) => {
 // ==========================================
 router.get("/control", (req, res) => {
     res.status(200).json(iotControlState);
+});
+
+
+// =========================================================================
+// 📸 KHU VỰC THÊM MỚI: API DÀNH RIÊNG CHO CAMERA & CHỐNG TRỘM
+// =========================================================================
+
+// [ESP32] - PIR phát hiện người -> Gọi API này
+router.post("/alert", (req, res) => {
+    const { event, message } = req.body;
+    if (event === "intruder_detected") {
+        latestAlert = { isIntruder: true, timestamp: Date.now() };
+        console.log("🚨 [ALARM] " + message);
+        sendDiscordAlert(0, 0, "INTRUDER"); // Bắn thông báo có trộm qua Discord luôn
+    }
+    res.status(200).json({ message: "Đã nhận cảnh báo" });
+});
+
+// [REACT] - Gọi API này để dập tắt cảnh báo đỏ trên màn hình
+router.post("/clear-alert", (req, res) => {
+    latestAlert = { isIntruder: false, timestamp: 0 };
+    res.status(200).json({ message: "Đã tắt cảnh báo" });
+});
+
+// [REACT] - Bấm nút "Chụp thủ công" trên Web
+router.post("/camera/trigger", (req, res) => {
+    manualCaptureTrigger = true; 
+    console.log("📸 [WEB] Đã ra lệnh chụp ảnh thủ công!");
+    res.status(200).json({ message: "Đã gửi lệnh xuống mạch" });
+});
+
+// [ESP32] - Hỏi xem có bị ép chụp ảnh không
+router.get("/camera/command", (req, res) => {
+    res.status(200).json({ captureNow: manualCaptureTrigger });
+    if (manualCaptureTrigger) manualCaptureTrigger = false; 
+});
+
+// [ESP32] - ESP32 chụp xong, upload Base64 lên đây -> Node.js up lên Cloudinary
+router.post("/camera/upload", async (req, res) => {
+    const { imageBase64, reason } = req.body;
+    if (!imageBase64) return res.status(400).json({ message: "Không có dữ liệu ảnh" });
+
+    try {
+        console.log(" Đang upload ảnh lên Cloudinary...");
+        const fileStr = `data:image/jpeg;base64,${imageBase64}`;
+        
+        // Upload lên thư mục "IOT_KHO" trên Cloudinary
+        const uploadResponse = await cloudinary.uploader.upload(fileStr, {
+            folder: "IOT_KHO",
+        });
+
+        latestImageUrl = uploadResponse.secure_url;
+        console.log(` [CAMERA] Đã upload Cloudinary! Link: ${latestImageUrl}`);
+await CameraLog.create({
+            imageUrl: latestImageUrl,
+            reason: reason 
+        });
+        if (reason === "Co_Trom") {
+             sendDiscordAlert(0, 0, "INTRUDER", latestImageUrl);
+        }
+        res.status(200).json({ message: "Upload thành công", url: latestImageUrl });
+    } catch (error) {
+        console.error("❌ Lỗi upload Cloudinary:", error);
+        res.status(500).json({ message: "Upload thất bại" });
+    }
+});
+
+// [REACT] - Web kéo dữ liệu Camera và Trạng thái cảnh báo về hiển thị
+router.get("/camera/latest", (req, res) => {
+    res.status(200).json({ 
+        image: latestImageUrl, 
+        alertStatus: latestAlert
+    });
 });
 
 module.exports = router;

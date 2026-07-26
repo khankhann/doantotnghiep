@@ -261,7 +261,6 @@ if (dims.length === 3 && (dims[2] === 6 || dims[2] === 7)) {
 
 
     if (hardCaseSuspectedClass) {
-      // Gửi buffer ảnh gốc + tên gốc + nhãn AI đang đoán nghi ngờ
       uploadHardCaseToRoboflow(
         req.file.buffer,
         req.file.originalname,
@@ -319,7 +318,6 @@ const requestedGender = req.body.gender || "All"
       const dbQuery = {
         $or: [
           { name: smartRegex },
-          { category: smartRegex },
           { tags: smartRegex },
         ],
       };

@@ -54,7 +54,7 @@ const VisualStylelist = () => {
         {/* PHẦN 1: NHẬP SỐ ĐO */}
         <form onSubmit={handleCalculateBMI} className="space-y-5 bg-gray-50 p-6 rounded-2xl">
           <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
-            📏 Chuyên gia tư vấn (Nhập số đo)
+            Nhập thông tin 
           </h3>
           <div className="space-y-3">
             <select 

@@ -102,10 +102,12 @@ const iotSensorSlice = createSlice({
       })
 
       // --- XỬ LÝ FETCH LATEST RFID ---
-      .addCase(fetchLastRfid.fulfilled, (state, action) => {
-        // Đề phòng API trả về null
-        state.lastRfid = action.payload?.rfidTag || null;
-      })
+     .addCase(fetchLastRfid.fulfilled, (state, action) => {
+  // Lưu toàn bộ payload để UI biết đây là "USER" hay "PRODUCT" và lấy Tên hiển thị
+  state.lastRfid = action.payload?.rfidTag ? action.payload : null;
+})
+
+
 
       // --- XỬ LÝ CLEAR BACKEND RFID ---
       .addCase(clearBackendRfid.fulfilled, (state) => {

@@ -19,7 +19,6 @@ function VisualSearchModal({ isOpen, onClose }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   
-  // 🔥 STATE LƯU GIỚI TÍNH NGƯỜI DÙNG CHỌN
   const [selectedGender, setSelectedGender] = useState("All"); 
 
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -94,7 +93,6 @@ function VisualSearchModal({ isOpen, onClose }) {
     const formData = new FormData();
     formData.append("image", selectedImage); 
     
-    // 🔥 NHÉT THÊM GIỚI TÍNH VÀO FORM DATA ĐỂ GỬI CHO BACKEND
     formData.append("gender", selectedGender);
 
     navigate("/search-result"); 
@@ -104,7 +102,7 @@ function VisualSearchModal({ isOpen, onClose }) {
       await dispatch(searchProductsByImage(formData)).unwrap();
       toast.success("AI phân tích xong!");
     } catch (error) {
-      toast.error(error || "AI đang bận hoặc có lỗi xảy ra. Thử lại sau nhé!");
+      toast.error(error || " Thử lại sau nhé!");
     } 
   };
 
@@ -112,7 +110,7 @@ function VisualSearchModal({ isOpen, onClose }) {
     stopCamera(); 
     setSelectedImage(null);
     setPreviewUrl(null);
-    setSelectedGender("All"); // Reset lại giới tính khi đóng Modal
+    setSelectedGender("All"); 
     if (fileInputRef.current) fileInputRef.current.value = ""; 
     onClose();
   };
@@ -197,7 +195,7 @@ function VisualSearchModal({ isOpen, onClose }) {
 
               <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} disabled={isLoading} />
 
-              {/* 🔥 KHU VỰC CHỌN GIỚI TÍNH (Chỉ hiện khi đã up ảnh và đang ko mở Cam) */}
+       
               {previewUrl && !isCameraOpen && !isLoading && (
                  <div className="w-full mt-5">
                     <p className="text-[12px] font-bold text-gray-700 mb-2 text-center">BẠN ĐANG TÌM ĐỒ CHO:</p>

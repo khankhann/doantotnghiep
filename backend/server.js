@@ -37,7 +37,8 @@ const handleChatSocket = require("./socket/socketChat");
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", 
+    // Cho phép cả Localhost và Vercel kết nối Chat
+    origin: ["http://localhost:5173", "https://doantotnghiep-mu.vercel.app"], 
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
   },
@@ -46,7 +47,7 @@ handleChatSocket(io)
 
 app.use(cors({
   // Cho phép cả 5173 (lúc code) và localhost (lúc chạy Docker)
-  origin: ["http://localhost:5173","http://localhost", "https://doantotnghiep-mu.vercel.app"], 
+  origin: ["http://localhost:5173", "https://doantotnghiep-mu.vercel.app"], 
   credentials: true
 }));
 // "http://localhost", "https://doantotnghiep-mu.vercel.app"

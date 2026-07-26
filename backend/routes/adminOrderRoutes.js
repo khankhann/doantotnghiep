@@ -69,6 +69,24 @@ router.put("/:id", protect, admin, async (req, res) => {
   }
 });
 
+// route Get / api/ admin/ orders/user/:id
+// Lấy toàn bộ đơn hàng của 1 khách hàng (Dành cho Admin)
+// private / admin
+router.get("/user/:id", protect, admin, async (req, res) => {
+  try {
+    // Tìm tất cả đơn hàng có trường 'user' bằng với ID truyền lên
+    const orders = await Order.find({ user: req.params.id }).sort({
+      createdAt: -1, // Đơn mới nhất xếp trên cùng
+    });
+    res.json(orders);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi server khi tìm lịch sử đơn hàng" });
+  }
+});
+
+module.exports = router;
+
 // route delete / api / admin/ orders/:id
 // // delete order by Id
 // // private / admin

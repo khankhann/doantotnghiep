@@ -4,7 +4,6 @@ import {
   HiOutlineShoppingBag,
   HiBars3BottomRight,
 } from "react-icons/hi2";
-// 👇 1. Thêm IoCameraOutline vào đây
 import { IoCloseOutline, IoCameraOutline } from "react-icons/io5"; 
 import { IoIosNotificationsOutline } from "react-icons/io";
 
@@ -21,9 +20,6 @@ import socket from "@components/socket/Socket";
 import Notifications from "../Notifications/Notifications";
 
 import { motion, AnimatePresence } from "framer-motion";
-
-// 👇 2. Import cái Modal AI vừa tạo vào đây 
-// (Nhớ chỉnh lại đường dẫn cho đúng với thư mục của fen nhé)
 import VisualSearchModal from "../../Common/VisualSearchModai/VisualSearchModai"; 
 
 function Navbar() {
@@ -44,8 +40,6 @@ function Navbar() {
   const closeNotifyRef = useRef(null);
   
   const [isSticky, setIsSticky] = useState(false);
-
-  // 👇 3. Khai báo state để bật/tắt Modal AI
   const [isVisualSearchOpen, setIsVisualSearchOpen] = useState(false);
 
   useEffect(() => {
@@ -74,7 +68,6 @@ function Navbar() {
     return () => socket.off("receive_notification", handleNewNotification);
   }, [user, dispatch]);
 
-  // BẮT SỰ KIỆN SCROLL QUÁ 300PX
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 300) {
@@ -102,9 +95,6 @@ function Navbar() {
   const toggleShopCart = () => setisShopCartOpen(!isShopCartOpen);
   const toggleNavMobile = () => setIsNavMobileOpen(!isNavMobileOpen);
 
-  // ==========================================
-  // GÓI TOÀN BỘ UI NAVBAR VÀO 1 BIẾN
-  // ==========================================
   const navContent = (
     <nav className="container mx-auto flex items-center justify-between py-3 md:py-4 px-4 md:px-6">
       {/* Left - Logo */}
@@ -113,13 +103,20 @@ function Navbar() {
       </div>
 
       {/* Center - Navigate */}
-      <div className="hidden md:flex space-x-6">
-        <Link to="/collections/all?gender=Men" className="text-gray-700 hover:text-black text-sm font-medium uppercase transition-colors">{t("navbar.men")}</Link>
-        <Link to="/collections/all?gender=Women" className="text-gray-700 hover:text-black text-sm font-medium uppercase transition-colors">{t("navbar.women")}</Link>
-        <Link to="/collections/all?category=Top Wear" className="text-gray-700 hover:text-black text-sm font-medium uppercase transition-colors">{t("navbar.topWear")}</Link>
-        <Link to="/collections/all?category=Bottom Wear" className="text-gray-700 hover:text-black text-sm font-medium uppercase transition-colors">{t("navbar.bottomWear")}</Link>
-        <Link to="/product-recommend" className="text-gray-700 hover:text-black text-sm font-medium uppercase transition-colors">Recommend</Link>
-        <Link to="/news" className="text-gray-700 hover:text-black text-sm font-medium uppercase transition-colors"> About us</Link>
+      <div className="hidden md:flex space-x-5 items-center">
+       
+        {user ? (
+          <>
+            <Link to="/collections/all?gender=Men" className="text-gray-700 hover:text-black text-sm font-medium uppercase transition-colors">{t("navbar.men")}</Link>
+            <Link to="/collections/all?gender=Women" className="text-gray-700 hover:text-black text-sm font-medium uppercase transition-colors">{t("navbar.women")}</Link>
+            <Link to="/collections/all?category=Top Wear" className="text-gray-700 hover:text-black text-sm font-medium uppercase transition-colors">{t("navbar.topWear")}</Link>
+            <Link to="/collections/all?category=Bottom Wear" className="text-gray-700 hover:text-black text-sm font-medium uppercase transition-colors">{t("navbar.bottomWear")}</Link>
+            <Link to="/product-recommend" className="text-gray-700 hover:text-black text-sm font-medium uppercase transition-colors">Recommend</Link>
+            <Link to="/news" className="text-gray-700 hover:text-black text-sm font-medium uppercase transition-colors"> About us</Link>
+          </>
+        ) : (
+          <span className="text-gray-400 text-[11px] italic tracking-wider">Đăng nhập để vào shop</span>
+        )}
       </div>
 
       {/* Right - Menu */}
@@ -141,8 +138,7 @@ function Navbar() {
           )}
         </button>
 
-        <div className="relative" id = "notify-container">
-          {/* --- UI Notifications rút gọn để tiết kiệm không gian hiển thị code --- */}
+        <div className="relative" id="notify-container">
           <button className="relative hover:text-black flex items-center transition-colors" onClick={() => setIsNotificationOpen(!isNotificationOpen)}>
             <IoIosNotificationsOutline className="h-6 w-6 md:h-7 md:w-7 text-gray-700 hover:text-black transition-colors" />
             {unreadCount > 0 && (
@@ -170,16 +166,23 @@ function Navbar() {
           </div>
         </div>
 
-        {/* 👇 4. NÚT CAMERA AI ĐƯỢC CHÈN VÀO ĐÂY (Ngay cạnh thanh Search) */}
-        <button 
-          onClick={() => setIsVisualSearchOpen(true)}
-          className="hover:text-black transition-transform hover:scale-110"
-          title="Tìm kiếm bằng hình ảnh (AI)"
-        >
-          <IoCameraOutline className="h-6 w-6 md:h-7 md:w-7 text-gray-700" />
-        </button>
+        {/* Cụm Search & Camera AI chỉ hiện khi đăng nhập */}
+        {user && (
+          <>
+            <button 
+              onClick={() => setIsVisualSearchOpen(true)}
+              className="hover:text-black transition-transform hover:scale-110"
+              title="Tìm kiếm bằng hình ảnh (AI)"
+            >
+              <IoCameraOutline className="h-6 w-6 md:h-7 md:w-7 text-gray-700" />
+            </button>
 
-        <div className="overflow-hidden"><SearchBar /></div>
+            <div className="overflow-hidden">
+              <SearchBar />
+            </div>
+          </>
+        )}
+
         <button className="md:hidden" onClick={toggleNavMobile}><HiBars3BottomRight className="h-6 w-6 text-gray-800" /></button>
       </div>
     </nav>
@@ -207,13 +210,11 @@ function Navbar() {
 
       <ShopCart openShopCart={isShopCartOpen} toggleShopCart={toggleShopCart} />
 
-      {/* 👇 5. GỌI COMPONENT MODAL AI VÀO ĐÂY ĐỂ NÓ RENDER ĐÈ LÊN MỌI THỨ */}
       <VisualSearchModal 
         isOpen={isVisualSearchOpen} 
         onClose={() => setIsVisualSearchOpen(false)} 
       />
 
-      {/* --- MOBILE SIDEBAR MENU (Giữ nguyên) --- */}
       <div className="container">
         {isNavMobileOpen && (
           <div
@@ -226,28 +227,49 @@ function Navbar() {
           className={`fixed top-0 left-0 w-[80vw] sm:w-1/2 md:w-1/3 h-full bg-white shadow-2xl transform transition-transform duration-500 z-50 flex flex-col
           ${isNavMobileOpen ? "translate-x-0" : "-translate-x-full"}`}
         >
-          {/* NỘI DUNG MOBILE MENU CỦA FEN NẰM Ở ĐÂY */}
           <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50">
             <span className="text-xl font-bold tracking-tight">Menu</span>
             <button onClick={toggleNavMobile} className="bg-white p-2 rounded-full shadow-sm">
               <IoCloseOutline className="h-6 w-6 text-gray-800 transition-all hover:rotate-180" />
             </button>
           </div>
+          
           <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-6">
             <nav className="flex flex-col space-y-5">
-              <Link to="/collections/all?gender=Men" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>Men</Link>
-              <Link to="/collections/all?gender=Women" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>Women</Link>
-              <Link to="/collections/all?category=Top Wear" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>Top Wear</Link>
-              <Link to="/collections/all?category=Bottom Wear" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>Bottom Wear</Link>
-           
-           {user && user.role === "admin" && (
-                <Link 
-                  to="/admin" 
-                  className="text-red-600 hover:text-red-800 font-bold text-lg mt-2 pt-4 border-t border-gray-200" 
-                  onClick={toggleNavMobile}
-                >
-                  Admin
-                </Link>
+              
+              {/* 👇 ẨN TOÀN BỘ KHI CHƯA ĐĂNG NHẬP (CẢ MOBILE) 👇 */}
+              {user ? (
+                <>
+                  <Link to="/collections/all?gender=Men" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>Men</Link>
+                  <Link to="/collections/all?gender=Women" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>Women</Link>
+                  <Link to="/collections/all?category=Top Wear" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>Top Wear</Link>
+                  <Link to="/collections/all?category=Bottom Wear" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>Bottom Wear</Link>
+                  
+                  {/* Bổ sung Recommend và About us vào đây */}
+                  <Link to="/product-recommend" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>Recommend</Link>
+                  <Link to="/news" className="text-gray-600 hover:text-black font-medium text-lg" onClick={toggleNavMobile}>About Us</Link>
+               
+                  {user.role === "admin" && (
+                    <Link 
+                      to="/admin" 
+                      className="text-red-600 hover:text-red-800 font-bold text-lg mt-2 pt-4 border-t border-gray-200" 
+                      onClick={toggleNavMobile}
+                    >
+                      Admin
+                    </Link>
+                  )}
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center mt-4 p-6 bg-gray-50 border border-gray-200 rounded-xl text-center gap-4">
+                  <p className="text-sm text-gray-500 font-medium">Bạn cần đăng nhập để xem Menu của cửa hàng.</p>
+                  <Link 
+                    to="/login" 
+                    className="w-full bg-black text-white px-5 py-3 rounded-lg font-bold hover:bg-gray-800 transition-colors" 
+                    onClick={toggleNavMobile}
+                  >
+                    Đăng nhập ngay
+                  </Link>
+                </div>
               )}
             </nav>
           </div>

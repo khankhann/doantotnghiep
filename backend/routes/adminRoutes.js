@@ -72,6 +72,7 @@ router.post("/", protect, admin, upload.single("avatar"), async(req, res)=>{
 })
 
 // 🔥 UPDATE INFO USER (CÓ CHECK PASS ADMIN)
+// 🔥 UPDATE INFO USER (CÓ CHECK PASS ADMIN)
 router.put("/:id", protect, admin , upload.single("avatar"), async(req, res)=>{
     try {
         // 1. Lấy thông tin ông Admin đang thực hiện thao tác
@@ -89,40 +90,44 @@ router.put("/:id", protect, admin , upload.single("avatar"), async(req, res)=>{
 
         // 3. Nếu qua ải pass, cho phép sửa User mục tiêu
         const user = await User.findById(req.params.id)
-        if(user){
-            user.name = req.body.name || user.name
-            user.email = req.body.email || user.email
-            user.role = req.body.role || user.role
-
-
-            if (req.body.rfidCard !== undefined) {
-                // Nếu FE gửi lên mã rỗng (tức là xóa thẻ), thì lưu null
-                user.rfidCard = req.body.rfidCard === "" ? null : req.body.rfidCard;
-            }
-
-            if(req.file){
-                const cloudResult = await uploadToCloudinary(req.file.buffer);
-                user.avatar = cloudResult.secure_url
-            }
-            const userUpdate =  await user.save()
-            res.json({message : "user updated successfully", user: userUpdate})
-       
-       try {
-                const userUpdate =  await user.save()
-                res.json({message : "user updated successfully", user: userUpdate})
-            } catch (saveErr) {
-                // Check lỗi nếu Admin cập nhật mã thẻ bị trùng với người khác
-                if (saveErr.code === 11000 && saveErr.keyPattern && saveErr.keyPattern.rfidCard) {
-                    return res.status(400).json({message: "Mã thẻ RFID này đã được liên kết với một tài khoản khác!"})
-                }
-                throw saveErr;
-            }
-        }else{
-            res.status(404).json({message : "user not found"})
+        if (!user) {
+            return res.status(404).json({message : "Không tìm thấy người dùng!"})
         }
-    }catch (err){
+
+        user.name = req.body.name || user.name
+        user.email = req.body.email || user.email
+        user.role = req.body.role || user.role
+
+        // 👇👇 BỔ SUNG: CẬP NHẬT MẬT KHẨU MỚI CHO USER (Nếu Admin có nhập) 👇👇
+        if (req.body.password) {
+            user.password = req.body.password;
+        }
+
+        if (req.body.rfidCard !== undefined) {
+            // Nếu FE gửi lên mã rỗng (tức là xóa thẻ), thì lưu null
+            user.rfidCard = req.body.rfidCard === "" ? null : req.body.rfidCard;
+        }
+
+        if (req.file) {
+            const cloudResult = await uploadToCloudinary(req.file.buffer);
+            user.avatar = cloudResult.secure_url
+        }
+        
+        // 4. Lưu dữ liệu (Chỉ lưu 1 lần duy nhất)
+        try {
+            const userUpdate = await user.save()
+            return res.json({message : "Cập nhật tài khoản thành công!", user: userUpdate})
+        } catch (saveErr) {
+            // Check lỗi nếu Admin cập nhật mã thẻ bị trùng với người khác
+            if (saveErr.code === 11000 && saveErr.keyPattern && saveErr.keyPattern.rfidCard) {
+                return res.status(400).json({message: "Mã thẻ RFID này đã được liên kết với một tài khoản khác!"})
+            }
+            throw saveErr; // Quăng xuống catch to bên dưới
+        }
+
+    } catch (err) {
         console.error(err)
-        res.status(500).json({message : "server error"})
+        return res.status(500).json({message : "Lỗi server khi cập nhật tài khoản!"})
     }
 })
 

@@ -79,8 +79,7 @@ function IotDashboard() {
         )}
       </div>
       
-      {/* NỘI DUNG CHÍNH (Chỉ hiển thị khi kết nối thành công) */}
-      {isIotConnected ? (
+       {isIotConnected ? (
         <>
           {/* Gauge Charts */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">

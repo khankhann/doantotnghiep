@@ -6,10 +6,7 @@ const User = require("../models/User");
 const { protect, admin } = require("../middleware/authMiddleware");
 
 const router = express.Router();
-
-// ==========================================
-// 🚀 POST /api/products (TẠO SẢN PHẨM MỚI)
-// ==========================================
+ 
 router.post("/", protect, admin, async (req, res) => {
   try {
     const {
@@ -33,10 +30,7 @@ router.post("/", protect, admin, async (req, res) => {
     res.status(500).json({ message: "Lỗi Server khi tạo sản phẩm" });
   }
 });
-
-// ==========================================
-// 🚀 PUT /api/products/:id (SỬA SẢN PHẨM)
-// ==========================================
+ 
 router.put("/:id", protect, admin, async (req, res) => {
   try {
     const {
@@ -81,10 +75,7 @@ router.put("/:id", protect, admin, async (req, res) => {
     res.status(500).json({ message: "Lỗi Server" });
   }
 });
-
-// ==========================================
-// 🚀 DELETE /api/products/:id
-// ==========================================
+ 
 router.delete("/:id", protect, admin, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -99,10 +90,7 @@ router.delete("/:id", protect, admin, async (req, res) => {
     res.status(500).send("Lỗi server");
   }
 });
-
-// ==========================================
-// 🚀 GET /api/products (LẤY VÀ LỌC SẢN PHẨM NGOÀI TRANG CHỦ)
-// ==========================================
+ 
 router.get("/", async (req, res) => {
   try {
     const { category, brand, size, color, gender, material, minPrice, maxPrice, sortBy, search, limit } = req.query;
@@ -140,10 +128,7 @@ router.get("/", async (req, res) => {
       if (minPrice) query.price.$gte = Number(minPrice);
       if (maxPrice) query.price.$lte = Number(maxPrice);
     }
-
-    // ==========================================================
-    // 🚀 5. LỌC ĐỘNG THÔNG MINH (TÍCH HỢP TỪ ĐIỂN SONG NGỮ)
-    // ==========================================================
+ 
     let conditions = [];
 
     // Giới tính
@@ -235,10 +220,7 @@ router.get("/", async (req, res) => {
     res.status(500).json({ message: "Lỗi Server" });
   }
 });
-
-// ==========================================
-// CÁC ROUTE PHỤ
-// ==========================================
+ 
 router.get("/best-seller", async (req, res) => {
   try {
     const bestSeller = await Product.findOne().sort({ rating: -1 });

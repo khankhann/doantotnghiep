@@ -77,7 +77,6 @@ function AdminLayout() {
               Quản trị viên
             </h1>
 
-            {/* 🔥 KHU VỰC ĐỒNG HỒ & NGÀY THÁNG */}
             <div className="hidden sm:flex items-center gap-2.5 bg-slate-50 px-3.5 py-1.5 rounded-lg border border-slate-200 shadow-sm ml-2">
                
                {/* Ngày tháng năm */}

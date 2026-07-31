@@ -23,7 +23,6 @@ function MyOrderPage() {
     }).format(price);
   };
 
-  // --- LOADING STATE ĐỒNG BỘ ---
   if (loading) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center bg-gray-50/30">
@@ -33,7 +32,6 @@ function MyOrderPage() {
     );
   }
 
-  // --- ERROR STATE ---
   if (error) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center bg-gray-50/30">
@@ -53,7 +51,6 @@ function MyOrderPage() {
       
       {/* HEADER */}
       <div className="mb-8 animate-fade-in-up">
-        <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Lịch sử đơn hàng</h2>
         <p className="text-gray-500 mt-2 text-sm">Theo dõi và quản lý các đơn hàng bạn đã thực hiện.</p>
       </div>
 

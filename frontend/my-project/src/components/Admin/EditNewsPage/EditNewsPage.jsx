@@ -3,8 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { updateNews } from "@redux/slices/newsSlice"; 
 import { toast } from "sonner";
-import axios from "axios"; // Nhớ import axios để gọi API upload ảnh
-
+import axios from "axios";  
 const EditNewsPage = () => {
   const { id } = useParams(); 
   const dispatch = useDispatch();
@@ -44,26 +43,20 @@ const EditNewsPage = () => {
       ...formData,
       [name]: value,
     });
-  };
-
-  // ==========================================
-  // HÀM XỬ LÝ UPLOAD ẢNH TỪ MÁY TÍNH
-  // ==========================================
+  }; 
   const uploadFileHandler = async (e) => {
     const file = e.target.files[0];
     const bodyFormData = new FormData();
-    bodyFormData.append("image", file); // Tên field "image" tuỳ thuộc vào backend quy định
-
+    bodyFormData.append("image", file); 
     setUploading(true);
     try {
       const config = {
         headers: {
           "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${localStorage.getItem("userToken")}`, // Nhớ truyền token nếu backend yêu cầu
+          Authorization: `Bearer ${localStorage.getItem("userToken")}`, // truyền token  backend yêu cầu
         },
       };
-
-      // Gọi API upload của fen (nhớ đổi URL cho đúng với backend)
+ 
       const { data } = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/upload`, 
         bodyFormData, 
@@ -73,7 +66,7 @@ const EditNewsPage = () => {
       // Cập nhật link ảnh mới vào formData
       setFormData({
         ...formData,
-        imageUrl: data.imageUrl || data.url || data, // Tuỳ cấu trúc data backend trả về
+        imageUrl: data.imageUrl || data.url || data, 
       });
       toast.success("Tải ảnh lên thành công!");
     } catch (error) {

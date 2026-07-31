@@ -21,9 +21,6 @@ router.post("/ai", protect, async (req, res) => {
 
     let systemContext = "";
 
-    // ==========================================
-    // 1. NẾU LÀ ADMIN: "SIÊU THƯ KÝ" (Giữ nguyên prompt của fen)
-    // ==========================================
     if (user.role === "admin") {
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
@@ -76,9 +73,6 @@ router.post("/ai", protect, async (req, res) => {
         7. nhấn mạnh in đậm các từ quan trọng để nắm bắt thông tin 
       `;
     }
-    // ==========================================
-    // 2. NẾU LÀ KHÁCH HÀNG: "STYLIST" (Giữ nguyên prompt của fen)
-    // ==========================================
     else {
       const myOrders = await Order.find({ user: user._id }).sort({ createdAt: -1 }).limit(5);
       let orderHistoryText = "Khách chưa từng mua sản phẩm nào.";
@@ -130,9 +124,6 @@ router.post("/ai", protect, async (req, res) => {
       `;
     }
 
-    // ==========================================
-    // 3. GỌI GROQ LLAMA 3
-    // ==========================================
     const chatCompletion = await groq.chat.completions.create({
       messages: [
         { role: "system", content: systemContext },
@@ -197,7 +188,7 @@ router.get("/admin/history/:userId", async (req, res) => {
         sender: "admin" // Bắt buộc sender phải là admin để không lẫn tin nhắn của khách
       };
     } else {
-      // 🚀 ADMIN CHAT VỚI KHÁCH: 
+      //  ADMIN CHAT VỚI KHÁCH: 
       // Mọi tin nhắn (khách gửi hay admin gửi) đều chung 1 mã 'user' là ID của khách
       query = { user: targetId };
     }

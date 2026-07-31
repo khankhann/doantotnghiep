@@ -15,10 +15,7 @@ function AdminWareHousePage() {
   const dispatch = useDispatch();
   const { products, loading } = useSelector((state) => state.adminProducts);
   const { userInfo } = useSelector((state) => state.auth || state.user || {});
-
-  // ==========================================
-  // 1. STATE IOT & ĐIỀU KHIỂN THIẾT BỊ
-  // ==========================================
+ 
   const { data: sensorDataReal } = useSelector((state) => state.iotSensor);
   const [isIotConnected, setIsIotConnected] = useState(false);
   const [iotHistory, setIotHistory] = useState([]);
@@ -27,8 +24,7 @@ function AdminWareHousePage() {
   const [isFireSystemActive, setIsFireSystemActive] = useState(true);
   const [isSecurityActive, setIsSecurityActive] = useState(true);
   const [isAlertActive, setIsAlertActive] = useState(false);
-
-  // 👉 FETCH DATA & ĐỒNG BỘ NÚT BẤM KHI VỪA VÀO TRANG
+ 
   useEffect(() => {
     dispatch(fetchAdminProducts());
     
@@ -50,24 +46,7 @@ function AdminWareHousePage() {
     const sensorInterval = setInterval(() => dispatch(fetchSensorData()), 3000);
     return () => clearInterval(sensorInterval);
   }, [dispatch]);
-
-  // 👉 POLLING: GỌI API CHECK TRẠNG THÁI CẢNH BÁO TỪ BACKEND
-  useEffect(() => {
-    const fetchAlertData = async () => {
-      try {
-        // Gọi API check xem có tín hiệu báo trộm không
-        const { data } = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/iot/alert/latest`);
-        if (data.alertStatus?.isIntruder && isSecurityActive) {
-          setIsAlertActive(true);
-        }
-      } catch (error) {}
-    };
-
-    const alertInterval = setInterval(fetchAlertData, 3000);
-    return () => clearInterval(alertInterval);
-  }, [isSecurityActive]);
-
-  // 👉 BỘ LỌC KẾT NỐI SENSOR
+ 
   useEffect(() => {
     if (sensorDataReal && sensorDataReal.temperature > 0) {
       setIsIotConnected(true);
@@ -82,9 +61,7 @@ function AdminWareHousePage() {
     } else {
       setIsIotConnected(false);
     }
-  }, [sensorDataReal]);
-
-  // 👉 HÀM GẠT NÚT CẢM BIẾN CHÁY
+  }, [sensorDataReal]); 
   const toggleFireSystem = async () => {
     const newState = !isFireSystemActive;
     setIsFireSystemActive(newState); 
@@ -97,8 +74,7 @@ function AdminWareHousePage() {
       setIsFireSystemActive(!newState); 
     }
   };
-
-  // 👉 HÀM GẠT NÚT AN NINH
+ 
   const toggleSecurity = async () => {
     const newState = !isSecurityActive;
     setIsSecurityActive(newState);
@@ -111,8 +87,7 @@ function AdminWareHousePage() {
       setIsSecurityActive(!newState);
     }
   };
-
-  // 👉 HÀM TẮT BÁO ĐỘNG
+ 
   const closeSecurityAlert = async () => {
     try {
       await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/iot/clear-alert`);
@@ -121,11 +96,7 @@ function AdminWareHousePage() {
     } catch (error) {
       toast.error("Không thể tắt báo động lúc này!");
     }
-  };
-
-  // ==========================================
-  // 2. STATE KHO & MODAL QUẢN LÝ TỒN KHO
-  // ==========================================
+  }; 
   const [searchTerm, setSearchTerm] = useState("");
   const [modalType, setModalType] = useState(null); 
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -363,18 +334,13 @@ function AdminWareHousePage() {
           </table>
         </div>
       </div>
-
-      {/* MODAL NHẬP/XUẤT/LỊCH SỬ KHO (Giữ nguyên không thay đổi) */}
+ 
       {modalType && selectedProduct && (
          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
-            {/* Nội dung giữ nguyên của thẻ Modal cũ để tránh code dài */}
-            {/* Bạn có thể paste lại phần Modal kho ở code trước vào đây */}
+          
          </div>
       )}
-
-      {/* ========================================== */}
-      {/* MODAL CẢNH BÁO ĐỘT NHẬP (KHÔNG CÓ CAMERA)    */}
-      {/* ========================================== */}
+ 
       {isAlertActive && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/90 px-4">
           <div className="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-pulse">

@@ -27,9 +27,7 @@ router.post("/", async (req, res) => {
     const qty = quantity && !isNaN(quantity) ? Number(quantity) : 1;
     const basePrice = Number(product.price || 0);
 
-    // ==========================================
-    // 🚀 1. LOGIC CHECK KHÁCH HÀNG (TẶNG 10% KHÁCH MỚI/LẶN 15 NGÀY)
-    // ==========================================
+   
     let userDiscount = 0;
 
     if (!userId) {
@@ -57,9 +55,6 @@ router.post("/", async (req, res) => {
       }
     }
 
-    // ==========================================
-    // 🚀 2. LOGIC TÌM 10 SẢN PHẨM Ế NHẤT TỪ DB
-    // ==========================================
     let productDiscount = 0;
 
     // Truy vấn 10 sản phẩm có số lượng 'sold' thấp nhất
@@ -85,15 +80,9 @@ router.post("/", async (req, res) => {
       }
     }
 
-    // ==========================================
-    // 🚀 3. CHỐT DEAL: GỘP ƯU ĐÃI & TÍNH TIỀN
-    // ==========================================
     const finalDiscountPercent = Math.max(userDiscount, productDiscount);
     const finalPrice = basePrice - (basePrice * finalDiscountPercent / 100);
 
-    // ==========================================
-    // 🚀 4. LƯU VÀO GIỎ HÀNG 
-    // ==========================================
     let cart = await getCart(userId, guestId);
 
     if (cart) {

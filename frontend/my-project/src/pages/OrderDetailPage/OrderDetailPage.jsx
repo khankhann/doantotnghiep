@@ -1,13 +1,11 @@
 import { useEffect } from "react";
-// 👇 1. Nhớ import thêm useNavigate nè fen
 import { Link, useParams, useNavigate } from "react-router-dom"; 
 import { useDispatch, useSelector } from "react-redux";
-import { fetchOrderDetails } from "../../redux/slices/orderSlice"; // (Nhớ check lại đường dẫn import slice nha)
-
+import { fetchOrderDetails } from "../../redux/slices/orderSlice";
 function OrderDetailPage() {
   const { id } = useParams();
   const dispatch = useDispatch();
-  const navigate = useNavigate(); // 👇 2. Khởi tạo navigate
+  const navigate = useNavigate(); //  2. Khởi tạo navigate
   const { orderDetails, loading, error } = useSelector((state) => state.orders);
 
   useEffect(() => {
@@ -157,7 +155,6 @@ function OrderDetailPage() {
                     
                   </td>
 
-                  {/* 👇 NÚT ĐÁNH GIÁ CHO TỪNG MÓN HÀNG */}
                   {orderDetails.isPaid && (
                     <td className="py-4 px-6 text-center">
                       <button

@@ -29,10 +29,7 @@ const uploadToCloudinary = (buffer) => {
     uploadStream.end(buffer);
   });
 };
-
-// ==========================================
-// 1. route POST /api/user/register (ĐÃ SỬA: Thêm gửi mail)
-// ==========================================
+ 
 router.post("/register", async (req, res) => {
   const { name, email, password, rfidCard } = req.body; // Thêm rfidCard nếu cần
   try {
@@ -58,8 +55,7 @@ router.post("/register", async (req, res) => {
     
     await user.save();
     // Chuẩn bị URL và Nội dung Email
-    // LƯU Ý: Phải có biến FRONTEND_URL trong file .env (ví dụ: http://localhost:3000)
-    const verifyUrl = `${process.env.FRONTEND_URL}/verify-email/${verifyToken}`;
+     const verifyUrl = `${process.env.FRONTEND_URL}/verify-email/${verifyToken}`;
     const message = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
         <h2 style="color: #333; text-align: center;">Chào mừng bạn đến với Cửa Hàng!</h2>
@@ -85,10 +81,7 @@ router.post("/register", async (req, res) => {
     res.status(500).json({ message: "Lỗi Server" });
   }
 });
-// ==========================================
-// 2. route GET /api/user/verify-email/:token (MỚI THÊM)
-// ==========================================
-router.get("/verify-email/:token", async (req, res) => {
+  router.get("/verify-email/:token", async (req, res) => {
   try {
     // Tìm user có token khớp và token phải chưa hết hạn ($gt = greater than now)
     const user = await User.findOne({
@@ -114,10 +107,7 @@ router.get("/verify-email/:token", async (req, res) => {
   }
 });
 
-// ==========================================
-// 3. route POST /api/user/login (ĐÃ SỬA: Chặn nếu chưa xác thực)
-// ==========================================
-router.post("/login", async (req, res) => {
+ router.post("/login", async (req, res) => {
   const { email, password } = req.body;
   try {
     let user = await User.findOne({ email });
@@ -163,8 +153,6 @@ router.post("/login", async (req, res) => {
 });
 
 // route PUT /api/users/:id 
-// Admin cập nhật thông tin user (bao gồm đổi mật khẩu)
-// ==========================================
 router.put("/:id", protect, admin, upload.single('avatar'), async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -266,9 +254,7 @@ router.put('/profile', protect, upload.single('avatar'), async (req, res) => {
         res.status(500).json({ message: "Cập nhật thất bại!" });
     }
 });
-
-// Route: POST /api/users/verify-access
-// ==========================================
+ 
 router.post('/verify-access', async (req, res) => {
   try {
     const { authRfid, password, userId } = req.body;

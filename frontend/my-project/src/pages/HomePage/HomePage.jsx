@@ -15,7 +15,6 @@ import ButtonBackTop from "@components/Common/Button/ButtonBackTop";
 import ChatWidget from "@components/Common/ChatWidget/ChatWidget";
 
 import FadeUp from "@components/PageTransition/FadeUp.jsx"; 
-// 🔥 Import quả địa cầu vào (nhớ check lại đường dẫn xem có đúng thư mục fen tạo không nhé)
 import Globe from "@components/Common/Globe/Globe.jsx"; 
 
 function HomePage() {

@@ -19,7 +19,6 @@ function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   
-  // 👉 State quản lý ẩn/hiện mật khẩu
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = (e) => {

@@ -16,7 +16,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { fetchAdminProducts } from "@redux/slices/adminProductSlice";
 import { fetchAllOrders } from "@redux/slices/adminOrderSlice";
-import { fetchSensorData } from "@redux/slices/iotSensorSlice";
 
 // Helper function để định dạng tiền VNĐ
 const formatPrice = (price) => {
@@ -43,50 +42,6 @@ function AdminHomePage() {
 
   const [timeFilter, setTimeFilter] = useState("7days");
 
-  // ==========================================
-  // LOGIC IOT: NHẬN DỮ LIỆU TỪ ESP32
-  // ==========================================
-  const { data: sensorData } = useSelector((state) => state.iotSensor);
-  const [iotHistory, setIotHistory] = useState([]);
-  // Thêm state này để lưu giá trị lần gần nhất
-  const [lastValue, setLastValue] = useState({ temp: null, hum: null });
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      dispatch(fetchSensorData());
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (sensorData && sensorData.temperature !== undefined) {
-      // Chỉ cập nhật history khi giá trị thay đổi so với lần ghi gần nhất
-      const isChanged = 
-        sensorData.temperature !== lastValue.temp || 
-        sensorData.humidity !== lastValue.hum;
-
-      if (isChanged) {
-        setIotHistory((prev) => {
-          const newHistory = [
-            ...prev,
-            {
-              time: sensorData.updatedAt || new Date().toLocaleTimeString("vi-VN"),
-              temp: sensorData.temperature,
-              humidity: sensorData.humidity,
-            },
-          ];
-          return newHistory.length > 15 ? newHistory.slice(1) : newHistory;
-        });
-        
-        // Lưu lại giá trị vừa cập nhật
-        setLastValue({ temp: sensorData.temperature, hum: sensorData.humidity });
-      }
-    }
-  }, [sensorData, lastValue]);
-  // ==========================================
-  // LOGIC 1: DỮ LIỆU BIỂU ĐỒ DOANH THU
-  // ==========================================
   const currentChartData = useMemo(() => {
     if (!orders || orders.length === 0) return [];
 
@@ -135,14 +90,11 @@ function AdminHomePage() {
     return data;
   }, [orders, timeFilter]);
 
-  // ==========================================
-  // LOGIC 2: DỮ LIỆU BIỂU ĐỒ TRÒN
-  // ==========================================
   const dynamicCategoryData = useMemo(() => {
     if (!products || products.length === 0) return [];
 
     const categoryCount = products.reduce((acc, product) => {
-      const categoryName = product.category?.name; // Lấy tên danh mục
+      const categoryName = product.category?.name;
 
       if (categoryName) {
         acc[categoryName] = (acc[categoryName] || 0) + 1;
@@ -192,9 +144,6 @@ function AdminHomePage() {
     ) : null;
   };
 
-  // ==========================================
-  // LOGIC 3: TÌM SẢN PHẨM SẮP HẾT / TỒN NHIỀU
-  // ==========================================
   const lowStockProducts =
     products?.filter((product) => product.countInStock < 10) || [];
   const highStockProducts =
@@ -208,153 +157,53 @@ function AdminHomePage() {
   return (
     <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">
-        {" "}
-        Admin Dashboard{" "}
+        Admin Dashboard
       </h1>
 
       {productsLoading || ordersLoading ? (
-        <p className="text-center text-gray-500 py-10">Đang tải dữ liệu... </p>
+        <p className="text-center text-gray-500 py-10">Đang tải dữ liệu...</p>
       ) : productsError || ordersError ? (
         <p className="text-center text-red-500 py-10">
           Lỗi: {productsError || ordersError}
         </p>
       ) : (
         <>
-          {/* PHẦN IOT MỚI THAY THẾ CHO IotDashboard */}
-          <div className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="flex flex-col gap-6 lg:col-span-1">
-              <div className="p-6 shadow-sm rounded-xl bg-white border-l-4 border-red-500 flex items-center justify-between">
-                <div>
-                  <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-                    Nhiệt độ kho
-                  </h2>
-                  <p className="text-4xl font-bold text-gray-900 mt-2">
-                    {sensorData.temperature > 0 ? sensorData.temperature : "--"}
-                    <span className="text-2xl text-gray-400 font-medium ml-1">
-                      °C
-                    </span>
-                  </p>
-                </div>
-              </div>
-              <div className="p-6 shadow-sm rounded-xl bg-white border-l-4 border-blue-500 flex items-center justify-between">
-                <div>
-                  <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-                    Độ ẩm kho
-                  </h2>
-                  <p className="text-4xl font-bold text-gray-900 mt-2">
-                    {sensorData.humidity}
-                    <span className="text-2xl text-gray-400 font-medium ml-1">
-                      %
-                    </span>
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 shadow-sm rounded-xl lg:col-span-2 border border-gray-100">
-              <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                </span>
-                Theo dõi Môi trường (Real-time)
-              </h2>
-              <div className="h-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={iotHistory}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="#f0f0f0"
-                      vertical={false}
-                    />
-                    <XAxis dataKey="time" tick={{ fontSize: 10 }} />
-                    <YAxis
-                      yAxisId="left"
-                      tick={{ fontSize: 10 }}
-                      domain={["dataMin - 5", "dataMax + 5"]}
-                    />
-                    <YAxis
-                      yAxisId="right"
-                      orientation="right"
-                      tick={{ fontSize: 10 }}
-                      domain={["dataMin - 5", "dataMax + 5"]}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        borderRadius: "8px",
-                        border: "none",
-                        boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-                      }}
-                    />
-                    <Legend />
-                    <Line
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="temp"
-                      name="Nhiệt độ (°C)"
-                      stroke="#EF4444"
-                      strokeWidth={3}
-                      dot={{ r: 3 }}
-                    />
-                    <Line
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="humidity"
-                      name="Độ ẩm (%)"
-                      stroke="#3B82F6"
-                      strokeWidth={3}
-                      dot={{ r: 3 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-
           {/* TẦNG 1: 3 THẺ TỔNG KẾT */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <div className="p-6 shadow-sm rounded-xl bg-white border-l-4 border-green-500 flex flex-col justify-between hover:shadow-md transition-shadow">
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-                {" "}
-                Total Revenue{" "}
+                Total Revenue
               </h2>
               <p className="text-2xl font-bold text-gray-900 mt-2">
-                {" "}
-                {formatPrice(totalSales || 0)}{" "}
+                {formatPrice(totalSales || 0)}
               </p>
             </div>
 
             <div className="p-6 shadow-sm rounded-xl bg-white border-l-4 border-blue-500 flex flex-col justify-between hover:shadow-md transition-shadow">
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-                {" "}
-                Total Orders{" "}
+                Total Orders
               </h2>
               <p className="text-3xl font-bold text-gray-900 mt-2">
-                {" "}
-                {totalOrders || orders?.length || 0}{" "}
+                {totalOrders || orders?.length || 0}
               </p>
               <Link
                 to="/admin/orders"
                 className="text-sm text-blue-600 hover:text-blue-800 mt-2 font-medium">
-                {" "}
-                Manage Orders →{" "}
+                Manage Orders →
               </Link>
             </div>
 
             <div className="p-6 shadow-sm rounded-xl bg-white border-l-4 border-yellow-500 flex flex-col justify-between hover:shadow-md transition-shadow">
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-                {" "}
-                Total Products{" "}
+                Total Products
               </h2>
               <p className="text-3xl font-bold text-gray-900 mt-2">
-                {" "}
-                {products?.length || 0}{" "}
+                {products?.length || 0}
               </p>
               <Link
                 to="/admin/products"
                 className="text-sm text-blue-600 hover:text-blue-800 mt-2 font-medium">
-                {" "}
-                Manage Products →{" "}
+                Manage Products →
               </Link>
             </div>
           </div>
@@ -453,56 +302,135 @@ function AdminHomePage() {
             </div>
           </div>
 
-          {/* TẦNG 3: BẢNG ORDERS VÀ CẢNH BÁO TỒN KHO */}
+          {/* TẦNG 3: BẢNG ĐƠN HÀNG VÀ TỒN KHO */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* BẢNG RECENT ORDERS - ĐÃ CẢI TIẾN */}
             <div className="bg-white shadow-sm rounded-xl p-6 border border-gray-100 lg:col-span-2">
-              <h2 className="text-lg font-bold mb-4">Recent Orders</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-gray-800">
+                  Đơn hàng gần đây
+                </h2>
+                <Link
+                  to="/admin/orders"
+                  className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors">
+                  Xem tất cả →
+                </Link>
+              </div>
+
               <div className="overflow-x-auto">
                 <table className="min-w-full text-left text-sm">
-                  <thead className="bg-gray-50 text-gray-700 border-b">
+                  <thead className="bg-gray-50 text-gray-600 border-b border-gray-100">
                     <tr>
-                      <th className="py-3 px-4">Order ID</th>
-                      <th className="py-3 px-4">Product</th>
-                      <th className="py-3 px-4">Date</th>
-                      <th className="py-3 px-4">Total</th>
-                      <th className="py-3 px-4 text-center">Status</th>
+                      <th className="py-3 px-3">Mã đơn</th>
+                      <th className="py-3 px-3">Khách hàng</th>
+                      <th className="py-3 px-3">Thanh toán</th>
+                      <th className="py-3 px-3">Tổng tiền</th>
+                      <th className="py-3 px-3 text-center">Trạng thái</th>
+                      <th className="py-3 px-3 text-right">Thao tác</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {orders?.slice(0, 5).map((order) => (
-                      <tr key={order._id} className="hover:bg-gray-50 border-b">
-                        <td className="p-4 font-bold">
-                          #{order._id.slice(-6).toUpperCase()}
-                        </td>
-                        <td className="p-4 truncate max-w-[150px]">
-                          {order?.orderItems?.[0]?.name || "N/A"}
-                        </td>
-                        <td className="p-4">
-                          {new Date(order.createdAt).toLocaleDateString(
-                            "vi-VN",
-                          )}
-                        </td>
-                        <td className="p-4 font-black text-green-700">
-                          {formatPrice(order.totalPrice || 0)}
-                        </td>
-                        <td className="p-4 text-center">
-                          <span
-                            className={`px-3 py-1 rounded-full text-[10px] font-bold ${
-                              order.status === "Delivered"
-                                ? "bg-green-100 text-green-700"
-                                : "bg-orange-100 text-orange-700"
-                            }`}>
-                            {order.status || "Processing"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                  <tbody className="divide-y divide-gray-100">
+                    {orders?.slice(0, 5).map((order) => {
+                      // Bóc tách tên khách hàng hoặc lấy từ người nhận
+                      const customerName =
+                        order?.user?.name ||
+                        order?.shippingAddress?.fullName ||
+                        "Khách lẻ";
+
+                      // Tính tổng số lượng sản phẩm trong đơn
+                      const totalItems =
+                        order?.orderItems?.reduce(
+                          (sum, item) => sum + (item.qty || item.quantity || 1),
+                          0
+                        ) || 0;
+
+                      return (
+                        <tr
+                          key={order._id}
+                          className="hover:bg-gray-50/80 transition-colors">
+                          {/* Mã Đơn */}
+                          <td className="p-3 font-mono font-bold text-blue-600">
+                            #{order._id.slice(-6).toUpperCase()}
+                          </td>
+
+                          {/* Khách hàng & Số lượng SP */}
+                          <td className="p-3">
+                            <div className="font-semibold text-gray-800 truncate max-w-[130px]" title={customerName}>
+                              {customerName}
+                            </div>
+                            <div className="text-[11px] text-gray-400">
+                              {totalItems} sản phẩm • {new Date(order.createdAt).toLocaleDateString("vi-VN")}
+                            </div>
+                          </td>
+
+                          {/* Phương thức thanh toán */}
+                          <td className="p-3">
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                                order.paymentMethod === "MOMO"
+                                  ? "bg-pink-50 border-pink-200 text-pink-600"
+                                  : order.paymentMethod === "PayPal"
+                                  ? "bg-blue-50 border-blue-200 text-blue-700"
+                                  : "bg-gray-100 border-gray-200 text-gray-600"
+                              }`}>
+                              {order.paymentMethod || "COD"}
+                            </span>
+                          </td>
+
+                          {/* Tổng tiền */}
+                          <td className="p-3 font-bold text-emerald-600 whitespace-nowrap">
+                            {formatPrice(order.totalPrice || 0)}
+                          </td>
+
+                          {/* Trạng thái đơn */}
+                          <td className="p-3 text-center whitespace-nowrap">
+                            <span
+                              className={`px-2.5 py-1 rounded-full text-[11px] font-bold inline-flex items-center gap-1 ${
+                                order.status === "Delivered"
+                                  ? "bg-green-100 text-green-700"
+                                  : order.status === "Shipped"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : order.status === "Cancelled" || order.status === "Cancel"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-amber-100 text-amber-700"
+                              }`}>
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  order.status === "Delivered"
+                                    ? "bg-green-500"
+                                    : order.status === "Shipped"
+                                    ? "bg-blue-500"
+                                    : order.status === "Cancelled" || order.status === "Cancel"
+                                    ? "bg-red-500"
+                                    : "bg-amber-500 animate-pulse"
+                                }`}></span>
+                              {order.status === "Delivered"
+                                ? "Đã giao"
+                                : order.status === "Shipped"
+                                ? "Đang giao"
+                                : order.status === "Cancelled" || order.status === "Cancel"
+                                ? "Đã hủy"
+                                : "Đang xử lý"}
+                            </span>
+                          </td>
+
+                          {/* Nút thao tác */}
+                          <td className="p-3 text-right whitespace-nowrap">
+                            <Link
+                              to={`/admin/orders/${order._id}`}
+                              className="text-xs font-semibold px-2.5 py-1 bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded transition-colors border border-gray-200">
+                              Chi tiết
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
 
-            {/* PHẦN CẢNH BÁO TỒN KHO (ĐÃ FIX UI "TỔNG") */}
+            {/* CẢNH BÁO TỒN KHO */}
             <div className="lg:col-span-1 flex flex-col gap-6">
               {/* Sắp hết hàng */}
               <div className="bg-white shadow-sm rounded-xl p-6 border border-gray-100">
@@ -531,7 +459,6 @@ function AdminHomePage() {
                       to={`/admin/products/${p._id}/edit`}
                       key={p._id}
                       className="block p-3 bg-red-50 hover:bg-red-100 border border-red-100 transition-colors rounded-lg group">
-                      {/* FIX: Tách Flex để chữ Tổng không bị ép xuống dòng */}
                       <div className="flex justify-between items-center mb-2">
                         <span
                           className="text-sm font-semibold truncate flex-1 mr-2 group-hover:text-red-700 transition-colors"
@@ -542,16 +469,23 @@ function AdminHomePage() {
                           Tổng: {p.countInStock}
                         </span>
                       </div>
-                      {/* Chi tiết từng Size/Color */}
                       {p.variants && p.variants.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           {p.variants.map((v, idx) => (
                             <span
                               key={idx}
-                              className={`text-[10px] px-1.5 py-0.5 rounded border ${v.stock === 0 ? "bg-red-200 border-red-300 text-red-800 font-bold" : "bg-white border-red-200 text-gray-600"}`}>
+                              className={`text-[10px] px-1.5 py-0.5 rounded border ${
+                                v.stock === 0
+                                  ? "bg-red-200 border-red-300 text-red-800 font-bold"
+                                  : "bg-white border-red-200 text-gray-600"
+                              }`}>
                               {v.variantName}:{" "}
                               <strong
-                                className={`${v.stock === 0 ? "text-red-700" : "text-black"}`}>
+                                className={`${
+                                  v.stock === 0
+                                    ? "text-red-700"
+                                    : "text-black"
+                                }`}>
                                 {v.stock}
                               </strong>
                             </span>
@@ -595,7 +529,6 @@ function AdminHomePage() {
                       to={`/admin/products/${p._id}/edit`}
                       key={p._id}
                       className="block p-3 bg-blue-50 hover:bg-blue-100 border border-blue-100 transition-colors rounded-lg group">
-                      {/* FIX TƯƠNG TỰ BÊN DƯỚI */}
                       <div className="flex justify-between items-center mb-2">
                         <span
                           className="text-sm font-semibold truncate flex-1 mr-2 group-hover:text-blue-700 transition-colors"
@@ -606,7 +539,6 @@ function AdminHomePage() {
                           Tổng: {p.countInStock}
                         </span>
                       </div>
-                      {/* Chi tiết từng Size/Color */}
                       {p.variants && p.variants.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           {p.variants.map((v, idx) => (

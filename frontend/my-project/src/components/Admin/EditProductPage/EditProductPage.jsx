@@ -77,14 +77,10 @@ function EditProductPage() {
     const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
     setProductData(prev => ({ ...prev, sku: `${prefix}${randomStr}` }));
   };
-
-  // ==============================================
-  // 🔥 ĐÂY CHÍNH LÀ ĐOẠN ĐÃ ĐƯỢC FIX ĐỂ GÕ CHỮ MƯỢT MÀ KHÔNG BỊ ĐƠ
-  // ==============================================
+ 
   const handleVariantChange = (index, field, val) => {
     setProductData(prev => {
-      // Bắt buộc phải tạo bản sao mới của mảng và object thì React mới cho phép gõ phím
-      const newVariants = [...prev.variants];
+        const newVariants = [...prev.variants];
       newVariants[index] = {
         ...newVariants[index],
         [field]: (field === "stock" || field === "price") ? Number(val.replace(/\D/g, "")) : val
@@ -173,8 +169,7 @@ function EditProductPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-6">
-        
-        {/* ================= CỘT TRÁI (THÔNG TIN CHÍNH) ================= */}
+         
         <div className="w-full lg:w-2/3 space-y-6">
           
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -278,8 +273,7 @@ function EditProductPage() {
           </div>
 
         </div>
-
-        {/* ================= CỘT PHẢI ================= */}
+ 
        <div className="w-full lg:w-1/3 space-y-6">
            
            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">

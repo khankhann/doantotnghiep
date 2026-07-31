@@ -19,13 +19,12 @@ const Globe = () => {
   const globeGroupRef = useRef();
 
   useEffect(() => {
-    const scene = new THREE.Scene();
-    // 🌟 KHẮC PHỤC 1: Tỉ lệ camera động theo khung hình
+    const scene = new THREE.Scene(); 
     const camera = new THREE.PerspectiveCamera(40, mountRef.current.clientWidth / mountRef.current.clientHeight, 0.1, 1000);
     camera.position.z = 3;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Tối ưu mobile không bị lag
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));  
     renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
     mountRef.current.appendChild(renderer.domElement);
 
@@ -165,7 +164,6 @@ const Globe = () => {
   }, []);
 
   return (
-    // 🌟 KHẮC PHỤC 3: Đảm bảo container luôn center và không bị tràn
     <div style={{ width: '100%', maxWidth: '500px', aspectRatio: '1/1', margin: '0 auto', position: 'relative', overflow: 'visible' }}>
       <div ref={mountRef} style={{ width: '100%', height: '100%', cursor: 'grab' }} />
       {labels.map(label => (

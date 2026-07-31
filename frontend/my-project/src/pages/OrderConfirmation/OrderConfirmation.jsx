@@ -17,7 +17,7 @@ function OrderConfirmation() {
   const { checkout } = useSelector((state) => state.checkout);
   const { user, guestId } = useSelector((state) => state.auth);
 
-  // --- LOGIC LẤY ID TỪ URL (Giữ nguyên) ---
+
   const momoOrderId = searchParams.get("orderId");
   const orderInfo = searchParams.get("orderInfo");
   const resultCode = searchParams.get("resultCode");

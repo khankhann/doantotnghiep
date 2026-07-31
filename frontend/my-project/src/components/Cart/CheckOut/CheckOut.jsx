@@ -36,8 +36,7 @@ function CheckOut() {
   const handleCreateCheckout = async (e) => {
     e.preventDefault();
     if (cart && cart.products.length > 0) {
-      
-      // THÊM ĐOẠN NÀY: Ghép họ và tên thành fullName
+       
       const payloadAddress = {
         ...shippingAddress,
         fullName: `${shippingAddress.firstName} ${shippingAddress.lastName}`.trim()
@@ -77,8 +76,7 @@ function CheckOut() {
       const data = response.data ? response.data : response;
 
       if (data && data.payUrl) {
-        // Nếu muốn hiện QR ngay trên web thì dùng setMomoPaymentUrl(data.payUrl)
-        // Hiện tại fen đang dùng navigate để chuyển thẳng sang MoMo
+        // Nếu muốn hiện QR ngay trên web thì dùng setMomoPaymentUrl(data.payUrl) 
         navigate(data.payUrl);
       } else {
         console.log("Lỗi giao dịch", data);

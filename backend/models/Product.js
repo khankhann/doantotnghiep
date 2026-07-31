@@ -76,7 +76,7 @@ const productSchema = new mongoose.Schema(
     },
     stockHistory: [
     {
-      action: { type: String, enum: ['IMPORT', 'EXPORT'] }, // Đổi 'type' thành 'action'
+      action: { type: String, enum: ['IMPORT', 'EXPORT'] }, 
       amount: { type: Number },
       note: { type: String },
       userName: { type: String },
@@ -110,7 +110,6 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
     
-    // 👉 ĐÃ FIX: Đổi từ String sang ObjectId để hết lỗi CastError và hỗ trợ đa tầng
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
@@ -122,13 +121,10 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
 
-    // 👉 ĐÃ THÊM: Mảng chứa thông số kỹ thuật (Để khách Filter)
     attributes: [attributeSchema],
 
-    // 👉 ĐÃ THÊM: Mảng chứa Phân loại kho (Biết chính xác có bao nhiêu cái XL, L)
     variants: [variantSchema],
 
-    // (ĐÃ XÓA: sizes, colors, collections, material, gender, suitableForBodyType)
 
     images: [
       {
@@ -167,7 +163,6 @@ const productSchema = new mongoose.Schema(
     lastEditByUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      // Tạm thời bỏ required: true để khỏi lỗi khi create nếu frontend quên gửi
       required: false, 
     },
     metaTitle: {

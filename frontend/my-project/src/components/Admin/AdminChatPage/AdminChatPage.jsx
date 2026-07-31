@@ -52,10 +52,7 @@ function AdminChatPage() {
       socket.off("receive_msg_from_admin", handleIncomingMsg);
     };
   }, [activeChat, dispatch]);
-
-  // ==========================================
-  // 👇 FIX MẤT TIN: GỌI API KÈM ID CỦA ADMIN
-  // ==========================================
+ 
   const handleSelectChat = (target) => {
     dispatch(setActiveChat(target)); 
     
@@ -136,8 +133,7 @@ function AdminChatPage() {
                 <div className="flex items-center justify-center h-full text-blue-500 text-sm font-medium animate-pulse">Đang tải tin nhắn...</div>
               ) : messages.length > 0 ? (
                 messages.map((msg, idx) => {
-                  
-                  // 👇 LOGIC FIX TRÁI PHẢI TUYỆT ĐỐI
+                   
                   let isMe = false;
                   if (msg.sender === "admin") {
                     // Nếu là tin mới (có adminId) thì check theo adminId, nếu tin cũ (trong DB) thì check Not Me

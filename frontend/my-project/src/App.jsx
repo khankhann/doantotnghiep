@@ -18,6 +18,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
 import EditProductPage from "@components/Admin/EditProductPage/EditProductPage";
 import OrderPage from "@components/Admin/OrderPage/OrderPage";
+import AdminOrderDetailPage from "@components/Admin/AdminOrderDetailPage/AdminOrderDetailPage";
 
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
@@ -37,6 +38,10 @@ import SearchProductRFID from "./components/Admin/SearchProductRFID/SearchProduc
 import VerifyEmail from "./components/Common/VerifyEmail/VerifyEmail";
 import AdminCartPage from './components/Admin/AdminCartPage/AdminCartPage';
 import AdminWareHousePage from './components/Admin/AdminWareHousePage/AdminWareHousePage';
+
+
+import { io } from "socket.io-client";
+const socket = io(import.meta.env.VITE_BACKEND_URL);
 function App() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
@@ -48,8 +53,47 @@ function App() {
   }
  
   }, [dispatch, user]);
+
+useEffect(() => {
+    socket.on("iot_alert", (data) => {
+       
+      if (data.type === "fire") {
+        toast.error(data.message, {
+          duration: 10000,
+          style: {
+            backgroundColor: "#ef4444", // Màu đỏ chót
+            color: "white",
+            fontSize: "16px",
+            fontWeight: "bold",
+            border: "none"
+          },
+        });
+      } 
+      
+      // Nếu là báo Trộm -> Toast Cam, thời gian hiện (5s)
+      else if (data.type === "intruder") {
+        toast.warning(data.message, {
+          duration: 5000,
+          style: {
+            backgroundColor: "#f59e0b", // Màu cam nổi bật
+            color: "white",
+            fontSize: "15px",
+            fontWeight: "bold",
+            border: "none"
+          },
+        });
+      }
+    });
+
+    return () => {
+      socket.off("iot_alert");
+    };
+  }, []);
+
+
   return (
     <BrowserRouter
+
       future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <TopLoadingBar />
       <Toaster position="top-right" />
@@ -95,6 +139,7 @@ function App() {
           <Route path="cart" element={<AdminCartPage />} />
           <Route path="warehouse" element={<AdminWareHousePage />} />
           <Route path="searchRFID" element={<SearchProductRFID />} />
+          <Route path="/admin/orders/:id" element={<AdminOrderDetailPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

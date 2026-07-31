@@ -19,10 +19,8 @@ export const fetchConversations = createAsyncThunk(
 // 2. Thunk: Lấy lịch sử chat của 1 khách hàng cụ thể
 export const fetchAdminChatHistory = createAsyncThunk(
   "adminChat/fetchAdminChatHistory",
-  // 🔥 Nhận 1 object chứa cả ID đích và ID của mình
   async ({ targetId, myId }, { rejectWithValue }) => { 
     try {
-      // 🔥 Gắn ?myId=${myId} vào đuôi link API
       const response = await api.get(`/api/messages/admin/history/${targetId}?myId=${myId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("userToken")}` },
       });

@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
-import { createNews } from "../../../redux/slices/newsSlice"; // Nhớ check lại đường dẫn nha
+import { createNews } from "../../../redux/slices/newsSlice";  
 import { toast } from "sonner";
-import axios from "axios"; // 👇 1. Thêm axios để gọi API upload ảnh
+import axios from "axios";  
 
 function CreateNewsPage  () {
   const dispatch = useDispatch();
@@ -16,8 +16,7 @@ function CreateNewsPage  () {
     content: "",
     imageUrl: "",
   });
-
-  // 👇 2. State quản lý trạng thái đang tải ảnh
+ 
   const [uploading, setUploading] = useState(false);
 
   // Hàm bắt sự kiện khi gõ vào input
@@ -27,11 +26,7 @@ function CreateNewsPage  () {
       ...formData,
       [name]: value,
     });
-  };
-
-  // ==========================================
-  // 👇 3. HÀM XỬ LÝ UPLOAD ẢNH TỪ MÁY TÍNH
-  // ==========================================
+  }; 
   const uploadFileHandler = async (e) => {
     const file = e.target.files[0];
     const bodyFormData = new FormData();
@@ -152,7 +147,7 @@ function CreateNewsPage  () {
                   alt="Preview" 
                   className="h-40 w-auto object-cover rounded shadow-sm border border-gray-300"
                 />
-                {/* 👇 4. Nút Xoá Ảnh (Icon dấu X) */}
+              
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, imageUrl: "" })}
@@ -168,7 +163,7 @@ function CreateNewsPage  () {
           )}
         </div>
 
-        {/* 3. Đoạn Intro (Tóm tắt) */}
+       
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Đoạn giới thiệu (Intro) <span className="text-red-500">*</span>
@@ -183,7 +178,7 @@ function CreateNewsPage  () {
           ></textarea>
         </div>
 
-        {/* 4. Nội dung chính */}
+        
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Nội dung chi tiết <span className="text-red-500">*</span>

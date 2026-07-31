@@ -18,7 +18,6 @@ function ProductSaleOff() {
     dispatch(fetchUserOrder());
   }, [dispatch]); 
 
-  // --- LOGIC TÍNH TOÁN SALE (Giữ nguyên của fen) ---
   let userDiscount = 0; 
   if (!orders || orders.length === 0) {
     userDiscount = 10; 
@@ -90,7 +89,7 @@ function ProductSaleOff() {
         {userDiscount === 10 && (
            <div className="w-full max-w-3xl mb-8 overflow-hidden rounded-2xl p-[1px] bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 shadow-2xl">
               <div className="bg-black/30 backdrop-blur-2xl text-white text-center py-4 rounded-2xl font-bold text-lg italic">
-                🔥 SPECIAL GIFT: Tặng riêng bạn Voucher giảm thêm 10% tại giỏ hàng!
+                SPECIAL GIFT: Tặng riêng bạn Voucher giảm thêm 10% tại giỏ hàng!
               </div>
            </div>
         )}

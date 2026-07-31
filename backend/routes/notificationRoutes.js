@@ -7,16 +7,14 @@ const router = express.Router();
 router.get("/", protect, async (req, res) => {
   try {
     const userId = req.user._id || req.user.id ;
-
-    // 👇 1. SOI XEM AI ĐANG GỌI API?
+ 
     console.log("🕵️‍♂️ API Notification - User đang gọi là:", userId);
 
     // Lấy thông báo của user ĐANG ĐĂNG NHẬP hoặc thông báo chung
     const notifications = await Notification.find({
       $or: [{ user: userId }, { user: null }],
     }).sort({ createdAt: -1 });
-
-    // 👇 2. SOI XEM TÌM ĐƯỢC BAO NHIÊU CÁI?
+ 
     console.log(`✅ Tìm thấy ${notifications.length} thông báo cho user này.`);
 
     res.json(notifications);

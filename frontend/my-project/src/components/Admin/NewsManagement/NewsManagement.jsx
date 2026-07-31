@@ -1,14 +1,13 @@
 import  { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import { fetchNews, deleteNews } from "@redux/slices/newsSlice"; // Nhớ trỏ đúng đường dẫn file slice của fen
-
+import { fetchNews, deleteNews } from "@redux/slices/newsSlice"; 
 const NewsManagement = () => {
   const dispatch = useDispatch();
   // Lấy dữ liệu từ store ra xài
   const { newsList, loading, error } = useSelector((state) => state.news);
 
-  // Gọi API lấy danh sách bài viết khi vừa vào trang
+  // Gọi API lấy danh sách bài viết 
   useEffect(() => {
     dispatch(fetchNews());
   }, [dispatch]);

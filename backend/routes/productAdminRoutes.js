@@ -3,24 +3,19 @@ const Product = require("../models/Product");
 const { protect, admin } = require("../middleware/authMiddleware");
 const Notification = require("../models/Notification");
 const User = require("../models/User");
-
-// 🔥 BỘ BA THƯ VIỆN ĐÃ CONFIG
+ 
 const QRCode = require('qrcode');
 const cloudinary = require('cloudinary').v2; 
 const axios = require('axios');
 
 const router = express.Router();
-
-// ==========================================
-// 🚀 1. GET /api/admin/products (LẤY DANH SÁCH + FIX BIỂU ĐỒ TRÒN)
-// ==========================================
+ 
 router.get("/", protect, admin, async (req, res) => {
   try {
     let query = {};
     if (req.query.search) {
       query.name = { $regex: req.query.search, $options: "i" };
-    }
-    // 👉 ĐÃ FIX: Thêm .populate("category", "name") để biểu đồ tròn hiển thị đúng tên danh mục, xóa sạch chữ "Khác"
+    } 
     const products = await Product.find(query)
       .populate("user", "name email")
       .populate("lastEditByUser", "name")
@@ -31,10 +26,7 @@ router.get("/", protect, admin, async (req, res) => {
     res.status(500).json({ message: "server error" });
   }
 });
-
-// ==========================================
-// 🚀 2. DELETE /api/admin/products/:id
-// ==========================================
+ 
 router.delete("/:id", protect, admin, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -48,10 +40,7 @@ router.delete("/:id", protect, admin, async (req, res) => {
     res.status(500).json({ message: "server error" });
   }
 });
-
-// ==========================================
-// 🚀 3. PUT /api/admin/products/:id (SỬA SẢN PHẨM)
-// ==========================================
+ 
 router.put("/:id", protect, admin, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -150,10 +139,7 @@ router.post("/", protect, admin, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-
-// ==========================================
-// 🚀 5. POST /api/admin/products/:id/generate-qr (TẠO BÙ QR CHO ĐỒ CŨ - ĐÃ FIX SẠCH LỖI)
-// ==========================================
+ 
 router.post("/:id/generate-qr", protect, admin, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -176,9 +162,7 @@ router.post("/:id/generate-qr", protect, admin, async (req, res) => {
     const uploadResult = await cloudinary.uploader.upload(qrBase64, {
         folder: "Shop_QRCodes", 
     });
-
-    // 👉 3. TỐI ƯU BẮT BUỘC: Cập nhật trực tiếp vào DB, bỏ qua khâu check lỗi dữ liệu cũ (category dạng chuỗi)
-    await Product.findByIdAndUpdate(
+     await Product.findByIdAndUpdate(
         req.params.id, 
         { $set: { qrCodeUrl: uploadResult.secure_url } },
         { runValidators: false } 

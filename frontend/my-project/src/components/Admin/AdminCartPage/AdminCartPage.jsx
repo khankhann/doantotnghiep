@@ -149,10 +149,7 @@ function AdminCartPage() {
 
   return (
     <div className="w-full bg-slate-50 min-h-screen">
-      
-      {/* ============================================================== */}
-      {/* MÀN HÌNH 1: DANH SÁCH ĐƠN HÀNG */}
-      {/* ============================================================== */}
+       
       {viewMode === "list" && (
         <div className="p-6 mx-auto max-w-7xl">
           <div className="flex justify-between items-center mb-6">
@@ -237,11 +234,9 @@ function AdminCartPage() {
               <h1 className="font-bold text-slate-800">Bán hàng tại quầy</h1>
             </div>
           </div>
-
-          {/* Khu vực làm việc chia 2 cột */}
+ 
           <div className="flex-1 flex overflow-hidden bg-slate-100 p-4 gap-4">
-            
-            {/* CỘT TRÁI: CAMERA QUÉT MÃ */}
+             
             <div className="flex-1 bg-white rounded-md border border-slate-200 shadow-sm flex flex-col overflow-hidden">
               <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
                 <span className="font-semibold text-slate-700 text-sm">Quét mã vạch / QR</span>
@@ -269,8 +264,7 @@ function AdminCartPage() {
                 )}
               </div>
             </div>
-
-            {/* CỘT PHẢI: GIỎ HÀNG (HÓA ĐƠN) */}
+ 
             <div className="w-[450px] bg-white rounded-md border border-slate-200 shadow-sm flex flex-col shrink-0 overflow-hidden">
               <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
                   <span className="font-semibold text-slate-700 text-sm">Giỏ hàng hiện tại</span>
@@ -329,10 +323,7 @@ function AdminCartPage() {
           </div>
         </div>
       )}
-
-      {/* ============================================================== */}
-      {/* MODAL: THÔNG TIN KHÁCH HÀNG & CHỐT ĐƠN */}
-      {/* ============================================================== */}
+ 
       {isCheckoutModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl">

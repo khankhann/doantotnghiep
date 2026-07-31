@@ -20,21 +20,19 @@ export const searchProductsByImage = createAsyncThunk(
   }
 );
 
-// --- ĐÃ THÊM BIẾN uploadedImage Ở ĐÂY ---
 const initialState = {
   isDetected: false,    
   aiData: null,         
   results: [],          
   isLoading: false,     
   error: null,          
-  uploadedImage: null,  // <-- Nơi cất giữ đường dẫn ảnh ảo để show lên UI
+  uploadedImage: null,  // 
 };
 
 const visualSearchSlice = createSlice({
   name: "visualSearch",
   initialState,
   reducers: {
-    // --- THÊM HÀM NÀY ĐỂ LƯU ẢNH LÚC USER CHỌN FILE ---
     setUploadedImage: (state, action) => {
       state.uploadedImage = action.payload; 
     },
@@ -44,7 +42,7 @@ const visualSearchSlice = createSlice({
       state.aiData = null;
       state.results = [];
       state.error = null;
-      state.uploadedImage = null; // <-- Nhớ xóa cả ảnh khi dọn dẹp data
+      state.uploadedImage = null; 
     },
   },
   extraReducers: (builder) => {

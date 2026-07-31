@@ -2,9 +2,6 @@ import {createAsyncThunk ,createSlice }from '@reduxjs/toolkit';
 import api from "../../api/axiosClients";
 
 
-// ==========================================
-// 1. TẠO ĐÁNH GIÁ (REVIEW)
-// ==========================================
 export const createProductReview = createAsyncThunk("products/createReview", async ({ productId, rating, comment }, { rejectWithValue }) => {
   try {
     const response = await api.post(`${import.meta.env.VITE_BACKEND_URL}/api/reviews/${productId}`, { rating, comment }, {
@@ -18,9 +15,6 @@ export const createProductReview = createAsyncThunk("products/createReview", asy
   }
 });
 
-// ==========================================
-// 2. SỬA ĐÁNH GIÁ
-// ==========================================
 export const editProductReview = createAsyncThunk("products/editReview", async ({ productId, reviewId, rating, comment }, { rejectWithValue }) => {
   try {
     const response = await api.put(`${import.meta.env.VITE_BACKEND_URL}/api/reviews/${productId}/${reviewId}`, { rating, comment }, {
@@ -34,9 +28,6 @@ export const editProductReview = createAsyncThunk("products/editReview", async (
   }
 });
 
-// ==========================================
-// 3. XÓA ĐÁNH GIÁ
-// ==========================================
 export const deleteProductReview = createAsyncThunk("products/deleteReview", async ({ productId, reviewId }, { rejectWithValue }) => {
   try {
     const response = await api.delete(`${import.meta.env.VITE_BACKEND_URL}/api/reviews/${productId}/${reviewId}`, {
@@ -50,9 +41,6 @@ export const deleteProductReview = createAsyncThunk("products/deleteReview", asy
   }
 });
 
-// ==========================================
-// 4. TẠO PHẢN HỒI (REPLY)
-// ==========================================
 export const createReviewReply = createAsyncThunk("products/createReply", async ({ productId, reviewId, comment }, { rejectWithValue }) => {
   try {
     const response = await api.post(`${import.meta.env.VITE_BACKEND_URL}/api/reviews/${productId}/${reviewId}/replies`, { comment }, {
@@ -66,9 +54,6 @@ export const createReviewReply = createAsyncThunk("products/createReply", async 
   }
 });
 
-// ==========================================
-// 5. SỬA PHẢN HỒI
-// ==========================================
 export const editReviewReply = createAsyncThunk("products/editReply", async ({ productId, reviewId, replyId, comment }, { rejectWithValue }) => {
   try {
     const response = await api.put(`${import.meta.env.VITE_BACKEND_URL}/api/reviews/${productId}/${reviewId}/replies/${replyId}`, { comment }, {
@@ -82,9 +67,6 @@ export const editReviewReply = createAsyncThunk("products/editReply", async ({ p
   }
 });
 
-// ==========================================
-// 6. XÓA PHẢN HỒI
-// ==========================================
 export const deleteReviewReply = createAsyncThunk("products/deleteReply", async ({ productId, reviewId, replyId }, { rejectWithValue }) => {
   try {
     const response = await api.delete(`${import.meta.env.VITE_BACKEND_URL}/api/reviews/${productId}/${reviewId}/replies/${replyId}`, {
@@ -106,9 +88,6 @@ initialState : {
 },
 extraReducers : (builder)=>{
     builder
-  // ==========================================
-      // 1. CASES: TẠO ĐÁNH GIÁ (CREATE REVIEW)
-      // ==========================================
       .addCase(createProductReview.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -122,9 +101,6 @@ extraReducers : (builder)=>{
         state.error = action.payload;
       })
 
-      // ==========================================
-      // 2. CASES: SỬA ĐÁNH GIÁ (EDIT REVIEW)
-      // ==========================================
       .addCase(editProductReview.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -137,9 +113,6 @@ extraReducers : (builder)=>{
         state.error = action.payload;
       })
 
-      // ==========================================
-      // 3. CASES: XÓA ĐÁNH GIÁ (DELETE REVIEW)
-      // ==========================================
       .addCase(deleteProductReview.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -152,9 +125,6 @@ extraReducers : (builder)=>{
         state.error = action.payload;
       })
 
-      // ==========================================
-      // 4. CASES: TẠO PHẢN HỒI (CREATE REPLY)
-      // ==========================================
       .addCase(createReviewReply.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -167,9 +137,6 @@ extraReducers : (builder)=>{
         state.error = action.payload;
       })
 
-      // ==========================================
-      // 5. CASES: SỬA PHẢN HỒI (EDIT REPLY)
-      // ==========================================
       .addCase(editReviewReply.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -182,9 +149,6 @@ extraReducers : (builder)=>{
         state.error = action.payload;
       })
 
-      // ==========================================
-      // 6. CASES: XÓA PHẢN HỒI (DELETE REPLY)
-      // ==========================================
       .addCase(deleteReviewReply.pending, (state) => {
         state.loading = true;
         state.error = null;

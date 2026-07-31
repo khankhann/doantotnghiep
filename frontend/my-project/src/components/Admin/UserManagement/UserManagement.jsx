@@ -57,8 +57,7 @@ function UserManagement() {
       if (!viewingUserOrders) return;
       setLoadingOrders(true);
       try {
-        // 👇👇👇 ĐỔI SỐ 5000 THÀNH 9000 Ở ĐÂY NÈ FEN 👇👇👇
-        const res = await fetch(`http://localhost:9000/api/admin/orders/user/${viewingUserOrders._id}`, {
+         const res = await fetch(`http://localhost:9000/api/admin/orders/user/${viewingUserOrders._id}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

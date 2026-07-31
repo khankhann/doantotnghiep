@@ -128,8 +128,7 @@ function CreateProductPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-6">
-        
-        {/* ================= CỘT TRÁI (THÔNG TIN CHÍNH) ================= */}
+         
         <div className="w-full lg:w-2/3 space-y-6">
           
           {/* Card: Thông tin cơ bản */}
@@ -172,8 +171,7 @@ function CreateProductPage() {
                    <option value="Unisex">Unisex (Cả nam và nữ)</option>
                  </select>
               </div>
-
-              {/* FIX LỖI ĐÈ GIAO DIỆN: Gộp nút vào input (Input Group) */}
+ 
               <div className="md:col-span-2">
                 <label className={labelStyle}>Mã sản phẩm (SKU) *</label>
                 <div className="flex shadow-sm rounded-lg">
@@ -236,9 +234,7 @@ function CreateProductPage() {
             </div>
           </div>
 
-        </div>
-
-        {/* ================= CỘT PHẢI (HÌNH ẢNH & LƯU) ================= */}
+        </div> 
        <div className="w-full lg:w-1/3 space-y-6">
            
            {/* Card: Hình ảnh */}

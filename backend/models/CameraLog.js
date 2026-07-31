@@ -7,7 +7,6 @@ const cameraLogSchema = new mongoose.Schema({
         required: true 
     },
     
-    // 2. Lý do chụp ("Co_Trom" hoặc "Thu_Cong")
     reason: { 
         type: String, 
         required: true 

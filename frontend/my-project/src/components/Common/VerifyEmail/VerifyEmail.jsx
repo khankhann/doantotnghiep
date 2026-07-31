@@ -8,19 +8,16 @@ function VerifyEmail() {
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("Đang xác thực tài khoản của bạn...");
   
-  // 🔥 Khai báo lính canh chống gọi API 2 lần
-  const hasFetched = useRef(false); 
+   const hasFetched = useRef(false); 
 
   useEffect(() => {
-    // 🔥 Nếu lính canh báo là "đã gọi API rồi" thì chặn lại không cho chạy tiếp
     if (hasFetched.current) return; 
 
     const verifyUserEmail = async () => {
       hasFetched.current = true; // Đánh dấu là bắt đầu gọi API
 
       try {
-        // (Lưu ý: fen dùng import.meta.env.VITE_BACKEND_URL như trong ảnh của fen là quá chuẩn)
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/verify-email/${token}`);
+          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/verify-email/${token}`);
         const data = await response.json();
 
         if (response.ok) {

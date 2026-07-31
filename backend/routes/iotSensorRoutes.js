@@ -4,10 +4,8 @@ const axios = require("axios");
 const User = require("../models/User");
 const Product = require("../models/Product");
 const CameraLog = require("../models/CameraLog");
-// 📦 IMPORT MODEL MONGODB
 const SensorData = require("../models/SensorData");
 
-// ☁️ IMPORT & CẤU HÌNH CLOUDINARY (THÊM MỚI)
 const cloudinary = require("cloudinary").v2;
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -15,11 +13,9 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// 1. BIẾN CHỐNG SPAM DISCORD
 let lastAlertTime = 0; 
-const COOLDOWN_TIME = 300000; 
+const COOLDOWN_TIME = 100000; 
 
-// 2. BỘ NHỚ TẠM SENSOR
 let latestSensorData = {
     temperature: 0,
     humidity: 0,
@@ -29,7 +25,6 @@ let latestSensorData = {
     updatedAt: null
 };
 
-// 🔥 2.1 BỘ NHỚ TẠM RFID 
 let latestRfidTag = {
     tag: null,
     type: null,
@@ -37,35 +32,38 @@ let latestRfidTag = {
     scannedAt: 0
 };
 
-// 🔥 2.2 BỘ NHỚ TẠM ĐIỀU KHIỂN
 let iotControlState = {
     fireSystem: true,
     securitySystem: true
 };
 
-// 📸 2.3 BỘ NHỚ TẠM CAMERA & CẢNH BÁO TRỘM (THÊM MỚI)
 let manualCaptureTrigger = false;
 let latestImageUrl = null; 
 let latestAlert = { isIntruder: false, timestamp: 0 };
 
-// 3. HÀM BẮN THÔNG BÁO DISCORD
-const sendDiscordAlert = async (temp, hum, type = "WEATHER", imageUrl = null) => {
+const sendDiscordAlert = async (temp, hum, type = "WEATHER", imageUrl = null, customMessage = "") => {
     const webhookUrl = process.env.DISCORD_WEBHOOK_URL; 
+    
+    if (!webhookUrl) return;
+
     try {
         let payload = { content: "" };
 
         if (type === "WEATHER") {
-            payload.content = `🔥 **BÁO ĐỘNG KHO HÀNG (NHIỆT ĐỘ)** \nNhiệt độ: **${temp}°C**\nĐộ ẩm: **${hum}%**`;
+            payload.content = `NHIỆT ĐỘ KHO HÀNG \nNhiệt độ: ${temp}°C\nĐộ ẩm: ${hum}%`;
         } else if (type === "INTRUDER") {
-            payload.content = `🚨 **CẢNH BÁO ĐỘT NHẬP** \nCảm biến PIR phát hiện có chuyển động trong kho hàng lúc ${new Date().toLocaleTimeString("vi-VN")}!`;
+            payload.content = ` CẢNH BÁO CHUYỂN ĐỘNG \n${customMessage || 'Cảm biến PIR phát hiện có chuyển động trong kho hàng'}`;
+        } else if (type === "FIRE") {
+            // Thêm @everyone để Discord hú thông báo đẩy cho cả team
+            payload.content = ` PHÁT HIỆN CÓ CHÁY TẠI KHO @everyone\n${customMessage || 'tự động bơm nước'}`;
         }
 
-        // BÍ QUYẾT LÀ ĐOẠN NÀY: Nếu có link ảnh, nhét nó vào tin nhắn Discord
+        // Nhét ảnh vào Discord (nếu có)
         if (imageUrl) {
             payload.embeds = [
                 {
-                    title: "📸 Ảnh chụp từ Camera An ninh",
-                    color: 16711680, // Mã màu Đỏ cho báo động
+                    title: "Ảnh chụp từ Camera An ninh",
+                    color: type === "FIRE" ? 16711680 : 16753920, 
                     image: { url: imageUrl }
                 }
             ];
@@ -76,9 +74,7 @@ const sendDiscordAlert = async (temp, hum, type = "WEATHER", imageUrl = null) =>
         console.log(" [DISCORD] Lỗi:", error.message);
     }
 };
-// ==========================================
-// 📌 API 1: ESP32 GỬI DATA SENSOR (POST)
-// ==========================================
+
 router.post("/sensor", async(req, res) => {
     const temp = parseFloat(req.body.temperature);
     const hum = parseFloat(req.body.humidity);
@@ -120,9 +116,6 @@ router.post("/sensor", async(req, res) => {
     res.status(200).json({ message: "OK" });
 });
 
-// ==========================================
-// 🔥 API 1.2: ESP32 GỬI MÃ THẺ RFID (POST)
-// ==========================================
 router.post("/rfid/scan", async (req, res) => {
     let { rfidTag } = req.body;
     if (!rfidTag) return res.status(400).json({ message: "Không tìm thấy mã thẻ!" });
@@ -154,17 +147,10 @@ router.post("/rfid/scan", async (req, res) => {
         res.status(500).json({ message: "Lỗi Server" });
     }
 });
-
-// ==========================================
-// 📌 API 2: FRONTEND LẤY DỮ LIỆU SENSOR (GET)
-// ==========================================
+ 
 router.get("/data", (req, res) => {
     res.status(200).json(latestSensorData);
-});
-
-// ==========================================
-// 🔥 API 2.2: FRONTEND LẤY MÃ THẺ RFID MỚI NHẤT (GET)
-// ==========================================
+}); 
 router.get("/rfid/latest", (req, res) => {
     try {
         if (!latestRfidTag.scannedAt) {
@@ -195,9 +181,6 @@ router.delete("/rfid/clear", (req, res) => {
     res.status(200).json({ message: "Đã xóa mã thẻ tạm thành công!" });
 });
 
-// ==========================================
-// 📌 API 3: FRONTEND LẤY LỊCH SỬ (GET)
-// ==========================================
 router.get("/history", async (req, res) => {
     try {
         const { range } = req.query;
@@ -222,9 +205,6 @@ router.get("/history", async (req, res) => {
     }
 });
 
-// ==========================================
-// 🚀 API 4: FRONTEND GỬI LỆNH ĐIỀU KHIỂN (POST)
-// ==========================================
 router.post("/control", (req, res) => {
     const { fireSystem, securitySystem } = req.body;
     
@@ -235,49 +215,62 @@ router.post("/control", (req, res) => {
     res.status(200).json({ message: "Đã cập nhật lệnh điều khiển", state: iotControlState });
 });
 
-// ==========================================
-// 🚀 API 5: ESP32 HỎI LỆNH ĐIỀU KHIỂN (GET)
-// ==========================================
 router.get("/control", (req, res) => {
     res.status(200).json(iotControlState);
 });
 
+router.post("/alert", async (req, res) => {
+  const { isFire, isIntruder, message } = req.body;
+  
+  const io = req.io;
 
-// =========================================================================
-// 📸 KHU VỰC THÊM MỚI: API DÀNH RIÊNG CHO CAMERA & CHỐNG TRỘM
-// =========================================================================
+  if (!io) {
+    console.log("Lỗi: Socket.io chưa được khởi tạo trên Server");
+  }
 
-// [ESP32] - PIR phát hiện người -> Gọi API này
-router.post("/alert", (req, res) => {
-    const { event, message } = req.body;
-    if (event === "intruder_detected") {
-        latestAlert = { isIntruder: true, timestamp: Date.now() };
-        console.log("🚨 [ALARM] " + message);
-        sendDiscordAlert(0, 0, "INTRUDER"); // Bắn thông báo có trộm qua Discord luôn
-    }
-    res.status(200).json({ message: "Đã nhận cảnh báo" });
+  // 1. Bắn sự kiện lên Frontend (qua Socket)
+  if (isFire && io) {
+    io.emit("iot_alert", { 
+      type: "fire", 
+      message: message || "PHÁT HIỆN CÓ CHÁY, HỆ THỐNG ĐANG BƠM NƯỚC!" 
+    });
+  }
+  
+  if (isIntruder && io) {
+    io.emit("iot_alert", { 
+      type: "intruder", 
+      message: message || " CẢNH BÁO: CÓ NGƯỜI VỪA ĐI NGANG QUA KHU VỰC" 
+    });
+  }
+
+  // 2. Bắn thông báo sang DISCORD
+  if (isFire) {
+      await sendDiscordAlert(0, 0, "FIRE", null, message);
+  }
+  
+  if (isIntruder) {
+      await sendDiscordAlert(0, 0, "INTRUDER", null, message);
+  }
+
+  res.status(200).json({ success: true, message: "Đã phát báo động" });
 });
 
-// [REACT] - Gọi API này để dập tắt cảnh báo đỏ trên màn hình
 router.post("/clear-alert", (req, res) => {
     latestAlert = { isIntruder: false, timestamp: 0 };
     res.status(200).json({ message: "Đã tắt cảnh báo" });
 });
 
-// [REACT] - Bấm nút "Chụp thủ công" trên Web
 router.post("/camera/trigger", (req, res) => {
     manualCaptureTrigger = true; 
     console.log("📸 [WEB] Đã ra lệnh chụp ảnh thủ công!");
     res.status(200).json({ message: "Đã gửi lệnh xuống mạch" });
 });
 
-// [ESP32] - Hỏi xem có bị ép chụp ảnh không
 router.get("/camera/command", (req, res) => {
     res.status(200).json({ captureNow: manualCaptureTrigger });
     if (manualCaptureTrigger) manualCaptureTrigger = false; 
 });
 
-// [ESP32] - ESP32 chụp xong, upload Base64 lên đây -> Node.js up lên Cloudinary
 router.post("/camera/upload", async (req, res) => {
     const { imageBase64, reason } = req.body;
     if (!imageBase64) return res.status(400).json({ message: "Không có dữ liệu ảnh" });
@@ -293,13 +286,16 @@ router.post("/camera/upload", async (req, res) => {
 
         latestImageUrl = uploadResponse.secure_url;
         console.log(` [CAMERA] Đã upload Cloudinary! Link: ${latestImageUrl}`);
-await CameraLog.create({
+        
+        await CameraLog.create({
             imageUrl: latestImageUrl,
             reason: reason 
         });
+        
         if (reason === "Co_Trom") {
              sendDiscordAlert(0, 0, "INTRUDER", latestImageUrl);
         }
+        
         res.status(200).json({ message: "Upload thành công", url: latestImageUrl });
     } catch (error) {
         console.error("❌ Lỗi upload Cloudinary:", error);
@@ -307,7 +303,6 @@ await CameraLog.create({
     }
 });
 
-// [REACT] - Web kéo dữ liệu Camera và Trạng thái cảnh báo về hiển thị
 router.get("/camera/latest", (req, res) => {
     res.status(200).json({ 
         image: latestImageUrl, 

@@ -11,7 +11,6 @@ const categorySchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    // 👉 TRƯỜNG NÀY ĐỂ LÀM DANH MỤC ĐA TẦNG (Danh mục con sẽ lưu ID của Danh mục cha vào đây)
     parentCategory: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",

@@ -4,6 +4,7 @@ import { BsChatDotsFill } from "react-icons/bs";
 import { IoCloseOutline, IoArrowBackOutline, IoSend, IoAlertCircleOutline } from "react-icons/io5";
 import { RiRobot2Line, RiUserSmileLine, RiGroupLine } from "react-icons/ri";
 import { useDispatch, useSelector } from "react-redux";
+import ReactMarkdown from 'react-markdown';
 import { 
   addAdminMessage, 
   addAIMessage, 
@@ -26,8 +27,7 @@ function ChatWidget() {
   const [unreadCount, setUnreadCount] = useState(0); 
   const [isLoadingHistory, setIsLoadingHistory] = useState(false); 
   const messagesEndRef = useRef(null);
-
-  // 🔥 Ref chặn tin nhắn trùng lặp (Duplicate)
+ 
   const lastSentTextRef = useRef(""); 
 
   const { aiMessages, adminMessages, isAITyping, adminList, userList } = useSelector((state) => state.chat);
@@ -67,8 +67,7 @@ function ChatWidget() {
 
       let isFromMe = false;
 
-      if (user?.role === "admin") {
-        // 🔥 Lọc: Chặn nếu trùng nội dung vừa gõ để không bị hiện 2 lần
+      if (user?.role === "admin") { 
         isFromMe = (msgAdminId && String(msgAdminId) === String(user?._id)) || 
                    (newMsg.sender === "admin" && newMsg.text === lastSentTextRef.current);
       } else {
@@ -232,7 +231,7 @@ function ChatWidget() {
                     )}
                   </motion.div>
                 ) 
-                // Màn hình Danh sách (Đã fix lỗi trắng xóa)
+                // Màn hình Danh sách 
                 : (chatMode === "select_admin" || chatMode === "select_user") ? (
                   <motion.div key="list" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#f8f9fa]">
                     {((chatMode === "select_admin" ? adminList : userList)?.filter(u => String(u._id) !== String(user?._id)).length > 0) ? (
@@ -274,7 +273,7 @@ function ChatWidget() {
                               <motion.div key={msg._id || `msg-${index}`} initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.2 }} className={`flex flex-col mb-1 ${isMe ? "items-end" : "items-start"}`}>
                                 <div className={`max-w-[80%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
                                   <div className={`px-4 py-2.5 text-[13px] shadow-sm transition-all duration-300 ${isMe ? "bg-gray-900 text-white rounded-[20px] rounded-br-none" : "bg-white text-gray-800 border border-gray-100 rounded-[20px] rounded-bl-none"}`}>
-                                    {msg.text}
+                                  <ReactMarkdown>{msg.text}</ReactMarkdown>
                                   </div>
                                   <span className="text-[10px] text-gray-400 mt-1 px-1">{moment(msg.createdAt).format("HH:mm")}</span>
                                 </div>

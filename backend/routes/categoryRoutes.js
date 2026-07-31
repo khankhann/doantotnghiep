@@ -2,9 +2,6 @@ const express = require("express");
 const router = express.Router();
 const Category = require("../models/Category");
 
-// ==========================================
-// 🚀 GET /api/categories - Lấy tất cả danh mục
-// ==========================================
 router.get("/", async (req, res) => {
   try {
     const categories = await Category.find({});
@@ -15,9 +12,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ==========================================
-// 🚀 POST /api/categories - Tạo danh mục mới
-// ==========================================
 router.post("/", async (req, res) => {
   try {
     const { name, description, parentCategory } = req.body;

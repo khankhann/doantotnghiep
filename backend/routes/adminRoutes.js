@@ -2,14 +2,14 @@ const express = require("express")
 const User = require("../models/User")
 const multer = require("multer")
 const cloudinary = require("cloudinary").v2
-const bcrypt = require("bcryptjs") // 🔥 Bắt buộc phải import bcrypt để check pass
+const bcrypt = require("bcryptjs") 
 const { protect, admin } = require("../middleware/authMiddleware")
 const router = express.Router()
 
 const storage = multer.memoryStorage()
 const upload = multer({storage : storage})
 
-// HÀM HỖ TRỢ UPLOAD BUFFER LÊN CLOUDINARY
+
 const uploadToCloudinary = (buffer) => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
@@ -52,7 +52,7 @@ router.post("/", protect, admin, upload.single("avatar"), async(req, res)=>{
         user = new User({
             name,
             email, 
-            password, // Nhớ đảm bảo password đã được băm trước khi save (trong Model User)
+            password, 
             role: role || "customer",
             avatar: avatarUrl ,
             rfidCard : rfidCard || null
@@ -71,8 +71,6 @@ router.post("/", protect, admin, upload.single("avatar"), async(req, res)=>{
     }
 })
 
-// 🔥 UPDATE INFO USER (CÓ CHECK PASS ADMIN)
-// 🔥 UPDATE INFO USER (CÓ CHECK PASS ADMIN)
 router.put("/:id", protect, admin , upload.single("avatar"), async(req, res)=>{
     try {
         // 1. Lấy thông tin ông Admin đang thực hiện thao tác
@@ -98,13 +96,11 @@ router.put("/:id", protect, admin , upload.single("avatar"), async(req, res)=>{
         user.email = req.body.email || user.email
         user.role = req.body.role || user.role
 
-        // 👇👇 BỔ SUNG: CẬP NHẬT MẬT KHẨU MỚI CHO USER (Nếu Admin có nhập) 👇👇
         if (req.body.password) {
             user.password = req.body.password;
         }
 
         if (req.body.rfidCard !== undefined) {
-            // Nếu FE gửi lên mã rỗng (tức là xóa thẻ), thì lưu null
             user.rfidCard = req.body.rfidCard === "" ? null : req.body.rfidCard;
         }
 
@@ -122,7 +118,7 @@ router.put("/:id", protect, admin , upload.single("avatar"), async(req, res)=>{
             if (saveErr.code === 11000 && saveErr.keyPattern && saveErr.keyPattern.rfidCard) {
                 return res.status(400).json({message: "Mã thẻ RFID này đã được liên kết với một tài khoản khác!"})
             }
-            throw saveErr; // Quăng xuống catch to bên dưới
+            throw saveErr; // Quăng xuống catch bên dưới
         }
 
     } catch (err) {
@@ -131,13 +127,11 @@ router.put("/:id", protect, admin , upload.single("avatar"), async(req, res)=>{
     }
 })
 
-// 🔥 DELETE USER (CÓ CHECK PASS ADMIN)
 router.delete("/:id", protect, admin , async(req, res)=>{
     try {
         // 1. Lấy thông tin ông Admin đang thực hiện thao tác
         const currentUser = await User.findById(req.user._id)
 
-        // 2. Chốt chặn: Bắt buộc phải có pass và pass phải đúng
         if (!req.body.currentPassword) {
             return res.status(400).json({ message: "Yêu cầu nhập mật khẩu Admin để xác nhận xóa!" })
         }
@@ -147,7 +141,6 @@ router.delete("/:id", protect, admin , async(req, res)=>{
             return res.status(401).json({ message: "Mật khẩu Admin không chính xác. Từ chối quyền!" })
         }
 
-        // 3. Nếu qua ải pass, cho phép xóa User mục tiêu
         const user = await User.findById(req.params.id)
         if(user){
             await user.deleteOne()

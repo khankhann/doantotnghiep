@@ -88,7 +88,6 @@ function VisualSearchResults() {
                 </div>
             ) : (
                 <div className="space-y-16">
-                    {/* 🔥 DUYỆT QUA displayResults (Mảng đã được lọc) THAY VÌ results GỐC */}
                     {displayResults.map((group, index) => (
                         <div key={index} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
                             

@@ -15,7 +15,6 @@ function ProfilePage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // 🔥 STATE CHO MODAL CHỈNH SỬA
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editData, setEditData] = useState({ name: "", email: "", password: "" });
   const [avatarPreview, setAvatarPreview] = useState(null);
@@ -153,7 +152,6 @@ function ProfilePage() {
         </div>
       </div>
 
-      {/* 🔥 MODAL CHỈNH SỬA HỒ SƠ 🔥 */}
       <AnimatePresence>
         {isEditModalOpen && (
           <>

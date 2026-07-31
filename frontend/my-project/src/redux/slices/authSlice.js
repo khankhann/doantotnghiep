@@ -19,9 +19,6 @@ const initialState = {
     error: null
 };
 
-// ==========================================
-// async thunk for user register (ĐÃ SỬA: Không lưu localStorage nữa)
-// ==========================================
 export const registerUser = createAsyncThunk("auth/registerUser", async (userData, { rejectWithValue }) => {
     try {
         const response = await api.post(`${import.meta.env.VITE_BACKEND_URL}/api/users/register`, userData);
@@ -35,9 +32,6 @@ export const registerUser = createAsyncThunk("auth/registerUser", async (userDat
     }
 });
 
-// ==========================================
-// async thunk for user login (Giữ nguyên)
-// ==========================================
 export const loginUser = createAsyncThunk("auth/loginUser", async (userData, { rejectWithValue }) => {
     try {
         const response = await api.post(`${import.meta.env.VITE_BACKEND_URL}/api/users/login`, userData);

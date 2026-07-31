@@ -15,8 +15,7 @@ function ProductManagement() {
     (state) => state.adminProducts,
   );
   const [searchItem, setSearchItem] = useState("");
-  
-  // 👇 STATE: Quản lý danh sách ID sản phẩm được tích chọn
+   
   const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {
@@ -25,28 +24,23 @@ function ProductManagement() {
     }, 1000);
     return () => clearTimeout(delay);
   }, [dispatch, searchItem]);
-
-  // 👇 HÀM: Xoá 1 sản phẩm
+ 
   const handleDelete = (productId) => {
     if (window.confirm("Are you sure you want to delete this Product?")) {
       dispatch(
         deleteProduct({
           id: productId,
         }),
-      );
-      // Xoá xong thì gỡ tick nếu nó đang được tick
+      ); 
       setSelectedIds((prev) => prev.filter((id) => id !== productId));
     }
-  };
-
-  // 👇 HÀM: Tick chọn 1 sản phẩm
+  }; 
   const handleToggleSelect = (id) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
   };
-
-  // 👇 HÀM: Tick chọn tất cả
+ 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
       setSelectedIds(products.map((p) => p._id));
@@ -54,8 +48,7 @@ function ProductManagement() {
       setSelectedIds([]);
     }
   };
-
-  // 👇 HÀM: Xoá hàng loạt sản phẩm đã chọn
+ 
   const handleDeleteSelected = () => {
     if (window.confirm(`Are you sure you want to delete ${selectedIds.length} selected products?`)) {
       // Gọi API xoá cho từng ID (Giống hệt cách fen setup ở Redux hiện tại)
@@ -81,8 +74,7 @@ const formatPrice = (price)=>{
         <h2 className="text-xl md:text-2xl font-bold text-gray-800">Product Management</h2>
         
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          
-          {/* 👇 NÚT XOÁ HÀNG LOẠT (Chỉ hiện khi có tick chọn) */}
+           
           {selectedIds.length > 0 && (
             <button
               onClick={handleDeleteSelected}
@@ -126,8 +118,7 @@ const formatPrice = (price)=>{
       <div className="overflow-x-auto shadow-sm sm:rounded-xl border border-gray-200">
         <table className="w-full text-left text-sm text-gray-500 block md:table">
           <thead className="hidden md:table-header-group bg-gray-50 text-xs uppercase text-gray-700 border-b">
-            <tr>
-              {/* 👇 Cột Checkbox Tất cả */}
+            <tr> 
               <th className="py-3 px-4 w-12 text-center">
                 {products?.length > 0 && (
                   <input
@@ -159,8 +150,7 @@ const formatPrice = (price)=>{
                     className={`block md:table-row bg-white hover:bg-gray-50 transition-all duration-200 ${
                       isChecked ? "bg-green-50/30" : ""
                     }`}
-                  >
-                    {/* 👇 Cột Checkbox Từng dòng */}
+                  > 
                     <td className="p-3 flex items-center justify-between md:table-cell border-b md:border-none md:text-center">
                       <span className="md:hidden font-semibold text-gray-700">Select:</span>
                       <input

@@ -28,9 +28,6 @@ router.post("/", protect, async (req, res) => {
       }
     });
 
-    // ==========================================
-    // 🚀 1. LOGIC CHECK KHÁCH HÀNG (TẶNG 10% KHÁCH MỚI/LẶN 15 NGÀY)
-    // ==========================================
     let userDiscount = 0; 
 
     const lastCreatedOrder = await Order.findOne({ user: req.user._id }).sort({ createdAt: -1 });
@@ -55,20 +52,14 @@ router.post("/", protect, async (req, res) => {
         }
       }
     }
-
-    // ==========================================
-    // 🚀 2. TÌM 10 SẢN PHẨM Ế NHẤT TỪ DATABASE 
-    // ==========================================
+ 
     const bottom10ProductsDB = await Product.find()
       .sort({ sold: 1, _id: 1 }) // <--- FIX: Đã thêm _id: 1 để đồng bộ 100% với Frontend
       .limit(10)         
       .select('_id createdAt'); 
     
     const bottom10Ids = bottom10ProductsDB.map(p => p._id.toString());
-
-    // ==========================================
-    // 🚀 3. TÍNH TIỀN CHO TỪNG SẢN PHẨM TRONG GIỎ
-    // ==========================================
+ 
     let calculatedTotalPrice = 0; 
     
     for(let item of mergedItems){
@@ -202,8 +193,7 @@ router.post("/:id/finalize", protect, async (req, res) => {
         paymentStatus: "paid",
         paymentDetails: checkout.paymentDetails,
       });
-
-      // 🚀 CẬP NHẬT TỒN KHO VÀ LƯỢT BÁN (Đã Fix lỗi logic)
+ 
      for(const item of checkout.checkoutItem){
         const productId = item.product || item.productId;
         

@@ -1,7 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
-
-// 👇 Thêm prop onDelete vào đây
+ 
 function Notifications({ notify, onClick, onMarkAsRead, isCompact, isSelected, onToggleSelect, onDelete }) {
   return (
     <div
@@ -29,8 +28,7 @@ function Notifications({ notify, onClick, onMarkAsRead, isCompact, isSelected, o
         </div>
       )}
 
-      {/* Chấm xanh hiển thị trạng thái */}
-      <div className={`mt-1.5 rounded-full flex-shrink-0 
+  <div className={`mt-1.5 rounded-full flex-shrink-0 
         ${isCompact ? "h-2 w-2" : "w-2.5 h-2.5 shadow-sm"} 
         ${!notify.read ? "bg-blue-600" : (isCompact ? "bg-gray-300" : "bg-transparent")}
       `}></div>
@@ -47,8 +45,7 @@ function Notifications({ notify, onClick, onMarkAsRead, isCompact, isSelected, o
         </p>
       </div>
 
-      {/* 👇 CỤM NÚT HÀNH ĐỘNG (CHỈ HIỆN Ở TRANG FULL) */}
-      {!isCompact && (
+        {!isCompact && (
         <div className="hidden md:flex flex-col gap-2 items-end flex-shrink-0">
           {/* Nút đánh dấu đã đọc */}
           {!notify.read && onMarkAsRead && (
